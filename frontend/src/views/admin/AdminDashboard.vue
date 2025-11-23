@@ -1,155 +1,329 @@
 <template>
-  <v-container fluid class="pa-6">
-    <h1 class="text-h4 font-weight-bold mb-6 text-primary">
-      Tổng Quan Quản Trị
-    </h1>
+  <v-container fluid class="pa-8 bg-grey-lighten-5 h-100">
+    <!-- Header Section -->
+    <div class="mb-8">
+      <h1 class="text-h3 font-weight-bold text-gradient mb-2">
+        Tổng Quan Quản Trị
+      </h1>
+      <p class="text-body-1 text-medium-emphasis">
+        Chào mừng trở lại! Dưới đây là số liệu hoạt động mới nhất của thư viện.
+      </p>
+    </div>
 
-    <v-row justify="space-between" class="mb-6">
+    <!-- Stats Cards Section -->
+    <v-row class="mb-4">
+      <!-- Card: Tổng độc giả -->
       <v-col cols="12" sm="6" md="3">
         <v-card
-          class="pa-5 elevation-4 rounded-lg dashboard-card"
+          class="pa-4 rounded-xl elevation-3 card-hover border-thin"
           color="white"
-          hover
         >
-          <div class="d-flex justify-space-between align-center">
+          <div class="d-flex justify-space-between align-start">
             <div>
-              <h2 class="text-subtitle-2 text-medium-emphasis mb-1">
-                Tổng độc giả
-              </h2>
-              <p class="text-h4 font-weight-semibold text-onSurface">
+              <div
+                class="text-overline font-weight-bold text-medium-emphasis mb-1"
+              >
+                TỔNG ĐỘC GIẢ
+              </div>
+              <div class="text-h3 font-weight-bold text-blue-grey-darken-3">
                 {{ dashboardData.totalReaders }}
-              </p>
+              </div>
             </div>
-            <v-icon size="40" color="blue-darken-1">mdi-account-group</v-icon>
+            <v-avatar color="blue-lighten-5" size="60" class="rounded-lg">
+              <v-icon color="blue-darken-2" size="32"
+                >mdi-account-group-outline</v-icon
+              >
+            </v-avatar>
           </div>
-        </v-card>
-      </v-col>
-
-      <v-col cols="12" sm="6" md="3">
-        <v-card
-          class="pa-5 elevation-4 rounded-lg dashboard-card"
-          color="white"
-          hover
-        >
-          <div class="d-flex justify-space-between align-center">
-            <div>
-              <h2 class="text-subtitle-2 text-medium-emphasis mb-1">
-                Tổng sách
-              </h2>
-              <p class="text-h4 font-weight-semibold text-onSurface">
-                {{ dashboardData.totalBooks }}
-              </p>
-            </div>
-            <v-icon size="40" color="green-darken-1">mdi-bookshelf</v-icon>
-          </div>
-        </v-card>
-      </v-col>
-
-      <v-col cols="12" sm="6" md="3">
-        <v-card
-          class="pa-5 elevation-4 rounded-lg dashboard-card"
-          color="white"
-          hover
-        >
-          <div class="d-flex justify-space-between align-center">
-            <div>
-              <h2 class="text-subtitle-2 text-medium-emphasis mb-1">
-                Tổng đơn mượn
-              </h2>
-              <p class="text-h4 font-weight-semibold text-onSurface">
-                {{ dashboardData.totalBorrows }}
-              </p>
-            </div>
-            <v-icon size="40" color="orange-darken-1"
-              >mdi-clipboard-list</v-icon
+          <v-divider class="my-4"></v-divider>
+          <div class="d-flex align-center">
+            <v-icon size="small" color="blue" class="mr-1"
+              >mdi-trending-up</v-icon
+            >
+            <span class="text-caption text-medium-emphasis"
+              >Cập nhật thời gian thực</span
             >
           </div>
         </v-card>
       </v-col>
 
+      <!-- Card: Tổng sách -->
       <v-col cols="12" sm="6" md="3">
         <v-card
-          class="pa-5 elevation-4 rounded-lg dashboard-card"
+          class="pa-4 rounded-xl elevation-3 card-hover border-thin"
           color="white"
-          hover
         >
-          <div class="d-flex justify-space-between align-center">
+          <div class="d-flex justify-space-between align-start">
             <div>
-              <h2 class="text-subtitle-2 text-medium-emphasis mb-1">
-                Tổng tiền phạt
-              </h2>
-              <p class="text-h4 font-weight-semibold text-error">
-                {{ dashboardData.totalFines.toLocaleString() }}đ
-              </p>
+              <div
+                class="text-overline font-weight-bold text-medium-emphasis mb-1"
+              >
+                KHO SÁCH
+              </div>
+              <div class="text-h3 font-weight-bold text-blue-grey-darken-3">
+                {{ dashboardData.totalBooks }}
+              </div>
             </div>
-            <v-icon size="40" color="red-darken-1">mdi-cash-remove</v-icon>
+            <v-avatar
+              color="emerald-lighten-5"
+              style="background-color: #e0f2f1"
+              size="60"
+              class="rounded-lg"
+            >
+              <v-icon color="teal-darken-2" size="32"
+                >mdi-book-open-page-variant-outline</v-icon
+              >
+            </v-avatar>
+          </div>
+          <v-divider class="my-4"></v-divider>
+          <div class="d-flex align-center">
+            <v-icon size="small" color="teal" class="mr-1"
+              >mdi-check-circle-outline</v-icon
+            >
+            <span class="text-caption text-medium-emphasis"
+              >Sẵn sàng phục vụ</span
+            >
+          </div>
+        </v-card>
+      </v-col>
+
+      <!-- Card: Tổng đơn mượn -->
+      <v-col cols="12" sm="6" md="3">
+        <v-card
+          class="pa-4 rounded-xl elevation-3 card-hover border-thin"
+          color="white"
+        >
+          <div class="d-flex justify-space-between align-start">
+            <div>
+              <div
+                class="text-overline font-weight-bold text-medium-emphasis mb-1"
+              >
+                ĐANG MƯỢN
+              </div>
+              <div class="text-h3 font-weight-bold text-blue-grey-darken-3">
+                {{ dashboardData.totalBorrows }}
+              </div>
+            </div>
+            <v-avatar color="amber-lighten-5" size="60" class="rounded-lg">
+              <v-icon color="orange-darken-3" size="32"
+                >mdi-clipboard-text-clock-outline</v-icon
+              >
+            </v-avatar>
+          </div>
+          <v-divider class="my-4"></v-divider>
+          <div class="d-flex align-center">
+            <v-icon size="small" color="orange" class="mr-1"
+              >mdi-clock-outline</v-icon
+            >
+            <span class="text-caption text-medium-emphasis">Yêu cầu xử lý</span>
+          </div>
+        </v-card>
+      </v-col>
+
+      <!-- Card: Tổng tiền phạt -->
+      <v-col cols="12" sm="6" md="3">
+        <v-card
+          class="pa-4 rounded-xl elevation-3 card-hover border-thin"
+          color="white"
+        >
+          <div class="d-flex justify-space-between align-start">
+            <div>
+              <div
+                class="text-overline font-weight-bold text-medium-emphasis mb-1"
+              >
+                TIỀN PHẠT
+              </div>
+              <div class="text-h3 font-weight-bold text-red-accent-4">
+                {{ (dashboardData.totalFines / 1000).toFixed(0) }}k
+              </div>
+            </div>
+            <v-avatar color="red-lighten-5" size="60" class="rounded-lg">
+              <v-icon color="red-darken-2" size="32">mdi-cash-multiple</v-icon>
+            </v-avatar>
+          </div>
+          <v-divider class="my-4"></v-divider>
+          <div class="d-flex align-center">
+            <span class="text-h6 font-weight-bold text-red-darken-1 mr-1">
+              {{ dashboardData.totalFines.toLocaleString()
+              }}<span class="text-caption">đ</span>
+            </span>
+            <span class="text-caption text-medium-emphasis ml-auto"
+              >Tổng thu</span
+            >
           </div>
         </v-card>
       </v-col>
     </v-row>
 
+    <!-- Charts & Tables Section -->
     <v-row>
-      <v-col cols="12" md="6">
-        <v-card class="pa-6 elevation-4 rounded-xl">
-          <h2 class="text-h6 font-weight-semibold mb-4 text-onSurface">
-            Độc giả gần đây
-          </h2>
-          <v-table class="w-100 table-responsive">
-            <thead>
-              <tr class="text-subtitle-2 text-medium-emphasis">
-                <th class="py-2 text-left font-weight-medium">Tên</th>
-                <th class="py-2 text-left font-weight-medium">Email</th>
-                <th class="py-2 text-left font-weight-medium">SĐT</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="reader in dashboardData.recentUsers" :key="reader._id">
-                <td class="py-3">{{ reader.ho_ten }}</td>
-                <td class="py-3">{{ reader.email }}</td>
-                <td class="py-3">{{ reader.so_dien_thoai }}</td>
-              </tr>
-            </tbody>
-          </v-table>
-        </v-card>
-      </v-col>
-
-      <v-col cols="12" md="6">
-        <v-card class="pa-6 elevation-4 rounded-xl">
-          <h2 class="text-h6 font-weight-semibold mb-4 text-onSurface">
-            Sách mới gần đây
-          </h2>
-          <v-table class="w-100 table-responsive">
-            <thead>
-              <tr class="text-subtitle-2 text-medium-emphasis">
-                <th class="py-2 text-left font-weight-medium">Tên sách</th>
-                <th class="py-2 text-left font-weight-medium">Tác giả</th>
-                <th class="py-2 text-left font-weight-medium">Thể loại</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="book in dashboardData.recentBooks" :key="book._id">
-                <td class="py-3">{{ book.ten_sach }}</td>
-                <td class="py-3">{{ book.author.ho_ten }}</td>
-                <td class="py-3">{{ book.category.ten_the_loai }}</td>
-              </tr>
-            </tbody>
-          </v-table>
-        </v-card>
-      </v-col>
-    </v-row>
-
-    <v-row class="mb-8">
+      <!-- Chart Section -->
       <v-col cols="12">
-        <v-card class="pa-6 elevation-4 rounded-xl">
-          <h2 class="text-h6 font-weight-semibold mb-4 text-onSurface">
-            Thống kê Sách Mượn (7 Ngày Gần Nhất)
-          </h2>
-          <BorrowChart :chart-data="chartData" />
+        <v-card class="pa-6 rounded-xl elevation-3 border-thin" color="white">
+          <div class="d-flex justify-space-between align-center mb-6">
+            <div>
+              <h2 class="text-h5 font-weight-bold text-blue-grey-darken-3">
+                Thống kê mượn sách
+              </h2>
+              <p class="text-subtitle-2 text-medium-emphasis">
+                Dữ liệu trong 7 ngày gần nhất
+              </p>
+            </div>
+            <v-btn
+              variant="tonal"
+              color="primary"
+              class="text-capitalize"
+              rounded="lg"
+              prepend-icon="mdi-refresh"
+              @click="fetchDashboardData"
+            >
+              Làm mới
+            </v-btn>
+          </div>
+          <div class="chart-container">
+            <BorrowChart v-if="chartData" :chart-data="chartData" />
+          </div>
+        </v-card>
+      </v-col>
+
+      <!-- Recent Users Table -->
+      <v-col cols="12" md="6">
+        <v-card
+          class="fill-height rounded-xl elevation-3 border-thin d-flex flex-column"
+          color="white"
+        >
+          <v-card-title class="pa-6 pb-2">
+            <div class="d-flex align-center">
+              <v-icon color="primary" class="mr-2"
+                >mdi-account-clock-outline</v-icon
+              >
+              <span class="font-weight-bold text-h6 text-blue-grey-darken-3"
+                >Độc giả mới</span
+              >
+            </div>
+          </v-card-title>
+
+          <v-card-text class="pa-0 flex-grow-1">
+            <v-table class="custom-table">
+              <thead>
+                <tr class="bg-grey-lighten-5">
+                  <th
+                    class="text-left font-weight-bold text-caption text-uppercase py-4 pl-6"
+                  >
+                    Thông tin
+                  </th>
+                  <th
+                    class="text-left font-weight-bold text-caption text-uppercase py-4"
+                  >
+                    Liên hệ
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="reader in dashboardData.recentUsers"
+                  :key="reader._id"
+                  class="table-row-hover"
+                >
+                  <td class="py-4 pl-6">
+                    <div class="d-flex align-center">
+                      <v-avatar color="indigo-lighten-4" size="40" class="mr-3">
+                        <span class="text-indigo-darken-2 font-weight-bold">{{
+                          reader.ho_ten.charAt(0)
+                        }}</span>
+                      </v-avatar>
+                      <div>
+                        <div
+                          class="font-weight-bold text-body-2 text-high-emphasis"
+                        >
+                          {{ reader.ho_ten }}
+                        </div>
+                        <div class="text-caption text-medium-emphasis">
+                          {{ reader.email }}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-4">
+                    <v-chip
+                      size="small"
+                      color="primary"
+                      variant="tonal"
+                      class="font-weight-medium"
+                    >
+                      {{ reader.so_dien_thoai }}
+                    </v-chip>
+                  </td>
+                </tr>
+              </tbody>
+            </v-table>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <!-- Recent Books Table -->
+      <v-col cols="12" md="6">
+        <v-card
+          class="fill-height rounded-xl elevation-3 border-thin d-flex flex-column"
+          color="white"
+        >
+          <v-card-title class="pa-6 pb-2">
+            <div class="d-flex align-center">
+              <v-icon color="green" class="mr-2">mdi-book-plus-outline</v-icon>
+              <span class="font-weight-bold text-h6 text-blue-grey-darken-3"
+                >Sách nhập gần đây</span
+              >
+            </div>
+          </v-card-title>
+
+          <v-card-text class="pa-0 flex-grow-1">
+            <v-table class="custom-table">
+              <thead>
+                <tr class="bg-grey-lighten-5">
+                  <th
+                    class="text-left font-weight-bold text-caption text-uppercase py-4 pl-6"
+                  >
+                    Tên sách
+                  </th>
+                  <th
+                    class="text-left font-weight-bold text-caption text-uppercase py-4"
+                  >
+                    Thông tin
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="book in dashboardData.recentBooks"
+                  :key="book._id"
+                  class="table-row-hover"
+                >
+                  <td class="py-4 pl-6">
+                    <div
+                      class="font-weight-bold text-body-2 text-high-emphasis mb-1"
+                    >
+                      {{ book.ten_sach }}
+                    </div>
+                    <div class="text-caption text-medium-emphasis">
+                      <v-icon size="small" class="mr-1">mdi-feather</v-icon>
+                      {{ book.author.ho_ten }}
+                    </div>
+                  </td>
+                  <td class="py-4">
+                    <v-chip color="success" size="small" variant="tonal">
+                      {{ book.category.ten_the_loai }}
+                    </v-chip>
+                  </td>
+                </tr>
+              </tbody>
+            </v-table>
+          </v-card-text>
         </v-card>
       </v-col>
     </v-row>
   </v-container>
 </template>
+
 <script>
 import AdminLayout from "@/components/admin/AdminLayout.vue";
 import BorrowChart from "@/components/admin/BorrowChart.vue";
@@ -221,16 +395,31 @@ export default {
           return countMap[key] || 0;
         });
 
+        // SETUP CHART ĐẸP HƠN
         this.chartData = {
           labels,
           datasets: [
             {
-              label: "Số sách mượn",
-              backgroundColor: "rgba(54, 162, 235, 0.6)",
+              label: "Sách mượn",
+              // Gradient fill effect handled by ChartJS plugins usually,
+              // but here using a clean blue with opacity
+              backgroundColor: (ctx) => {
+                const canvas = ctx.chart.ctx;
+                const gradient = canvas.createLinearGradient(0, 0, 0, 400);
+                gradient.addColorStop(0, "rgba(59, 130, 246, 0.5)"); // Blue 500
+                gradient.addColorStop(1, "rgba(59, 130, 246, 0.0)");
+                return gradient;
+              },
               borderColor: "#3B82F6",
+              pointBackgroundColor: "#FFFFFF",
+              pointBorderColor: "#3B82F6",
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 6,
               data,
               fill: true,
-              tension: 0.3,
+              tension: 0.4, // Smooth curves
+              borderWidth: 3,
             },
           ],
         };
@@ -239,14 +428,48 @@ export default {
       }
     },
   },
-  // XÓA LOGIC RELOAD TỰ ĐỘNG KHÔNG CẦN THIẾT
-  /* mounted() {
-        if (!sessionStorage.getItem('reloaded')) {
-            sessionStorage.setItem('reloaded', 'true');
-            window.location.reload();
-        } else {
-            sessionStorage.removeItem('reloaded');
-        }
-    }, */
 };
 </script>
+
+<style scoped>
+.text-gradient {
+  background: linear-gradient(to right, #1e3c72, #2a5298);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.card-hover {
+  transition: all 0.3s ease-in-out;
+}
+
+.card-hover:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+.border-thin {
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.table-row-hover:hover td {
+  background-color: #fafafa;
+  transition: background-color 0.2s ease;
+}
+
+.custom-table th {
+  font-family: "Roboto", sans-serif;
+  letter-spacing: 0.05em;
+  color: #64748b !important;
+}
+
+/* Scrollbar tùy chỉnh cho bảng nếu cần */
+.v-table__wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.v-table__wrapper::-webkit-scrollbar-thumb {
+  background: #e0e0e0;
+  border-radius: 4px;
+}
+</style>
