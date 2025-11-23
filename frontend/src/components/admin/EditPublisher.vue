@@ -9,17 +9,6 @@
         <h2 class="text-2xl font-bold text-black">Chỉnh sửa Nhà xuất bản</h2>
       </div>
 
-      <span
-        v-if="message"
-        :class="{
-          'text-green-600': messageType === 'success',
-          'text-red-600': messageType === 'error',
-          'block text-center mb-4 font-medium': true,
-        }"
-      >
-        {{ message }}
-      </span>
-
       <Form
         v-if="initialValues"
         :key="formKey"
@@ -65,6 +54,20 @@
         </v-btn>
       </Form>
     </v-card>
+
+    <!-- Snackbar thông báo -->
+    <v-snackbar
+      v-model="snackbar"
+      :timeout="2000"
+      :color="messageType === 'success' ? 'green darken-1' : 'red darken-1'"
+      top
+      right
+    >
+      {{ message }}
+      <template #actions>
+        <v-btn text @click="snackbar = false">Đóng</v-btn>
+      </template>
+    </v-snackbar>
   </div>
 </template>
 
@@ -74,16 +77,14 @@ import * as yup from "yup";
 import api from "@/services/api.service";
 
 export default {
-  components: {
-    Form,
-    Field,
-  },
+  components: { Form, Field },
   data() {
     return {
       formKey: 0,
       initialValues: null,
       message: "",
       messageType: "",
+      snackbar: false,
       schema: yup.object({
         name: yup.string().required("Vui lòng nhập tên nhà xuất bản"),
         address: yup.string().required("Vui lòng nhập địa chỉ"),
@@ -107,11 +108,13 @@ export default {
 
         this.formKey++;
       } catch (error) {
-        this.message =
-          error.response?.data?.message || "Lỗi tải thông tin nhà xuất bản.";
-        this.messageType = "error";
+        this.showMessage(
+          error.response?.data?.message || "Lỗi tải thông tin nhà xuất bản.",
+          "error"
+        );
       }
     },
+
     async submitForm(values) {
       const id = this.$route.params.id;
       try {
@@ -120,18 +123,27 @@ export default {
           dia_chi: values.address,
         };
         await api.put(`/api/publishers/${id}`, payload);
-        this.message = "Cập nhật nhà xuất bản thành công!";
-        this.messageType = "success";
+        this.showMessage("Cập nhật nhà xuất bản thành công!", "success");
+
+        // Delay 1s rồi quay về trang danh sách nhà xuất bản
+        setTimeout(() => this.$router.push("/admin/publishers"), 1000);
       } catch (error) {
-        this.message =
-          error.response?.data?.message || "Có lỗi xảy ra khi cập nhật.";
-        this.messageType = "error";
+        this.showMessage(
+          error.response?.data?.message || "Có lỗi xảy ra khi cập nhật.",
+          "error"
+        );
       }
+    },
+
+    showMessage(msg, type) {
+      this.message = msg;
+      this.messageType = type;
+      this.snackbar = true;
     },
   },
 };
 </script>
 
 <style scoped>
-/* Thêm style nếu cần */
+/* Thêm CSS tuỳ chỉnh nếu cần */
 </style>
