@@ -9,13 +9,11 @@
 </template>
 
 <script>
-import BorrowerHeader from '@/components/BorrowerHeader.vue'
+import BorrowerHeader from "@/components/BorrowerHeader.vue";
 
 export default {
-
   components: {
     BorrowerHeader,
-
-  }
+  },
 };
 </script>

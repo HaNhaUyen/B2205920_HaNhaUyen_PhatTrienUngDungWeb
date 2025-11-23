@@ -2,7 +2,8 @@
 import { createRouter, createWebHistory } from "vue-router";
 import BorrowHome from "../views/BorrowHome.vue";
 import BooksPage from "../views/BookCatalog.vue";
-import Login from "../views/Login.vue";
+import LoginUser from "../views/LoginUser.vue";
+import LoginAdmin from "../views/LoginAdmin.vue";
 import Register from "../views/Register.vue";
 import BookDetail from "../views/BookDetail.vue";
 import UserProfile from "../views/UserProfile.vue";
@@ -21,8 +22,13 @@ const routes = [
   },
   {
     path: "/login",
-    name: "Login",
-    component: Login,
+    name: "LoginUser",
+    component: LoginUser,
+  },
+  {
+    path: "/login-admin",
+    name: "LoginAdmin",
+    component: LoginAdmin,
   },
   {
     path: "/register",
@@ -39,7 +45,10 @@ const routes = [
     name: "UserProfile",
     component: UserProfile,
   },
-  // router/index.js hoặc router.js
+
+  // ===========================
+  // ADMIN ROUTES + GUARDS
+  // ===========================
   {
     path: "/admin",
     component: () => import("@/components/admin/AdminLayout.vue"),
@@ -50,7 +59,6 @@ const routes = [
         name: "AdminDashboard",
         component: () => import("@/views/admin/AdminDashboard.vue"),
       },
-
       {
         path: "books",
         name: "BookManager",
@@ -111,8 +119,15 @@ const routes = [
         name: "EditBorrow",
         component: () => import("@/components/admin/EditBorrow.vue"),
       },
+      {
+        path: "profile",
+        name: "AdminProfile",
+        component: () => import("@/views/admin/AdminProfile.vue"),
+      },
     ],
   },
+
+  // 404
   { path: "/:pathMatch(.*)*", name: "NotFound", component: NotFound },
 ];
 
@@ -120,21 +135,26 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
 });
+
+// =====================================
+// KIỂM TRA ĐĂNG NHẬP + PHÂN QUYỀN ADMIN
+// =====================================
 router.beforeEach((to, from, next) => {
-  const user = JSON.parse(localStorage.getItem("user")); // hoặc lấy từ store Vuex
+  const user = JSON.parse(localStorage.getItem("user"));
 
   if (to.meta.requiresAuth) {
     if (!user) {
-      return next("/login"); // chưa đăng nhập
+      return next("/login"); // Chưa đăng nhập
     }
 
-    const userRole = user.role; // ví dụ: "ROLE_STAFF" hoặc "ROLE_READER"
+    const role = user.role;
 
-    if (!to.meta.roles.includes(userRole)) {
-      return next({ name: "NotFound" });
+    if (!to.meta.roles.includes(role)) {
+      return next({ name: "NotFound" }); // Không có quyền
     }
   }
 
   next();
 });
+
 export default router;
