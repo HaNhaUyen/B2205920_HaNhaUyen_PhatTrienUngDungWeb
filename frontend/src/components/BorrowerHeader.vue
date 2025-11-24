@@ -249,7 +249,7 @@
         <v-divider class="my-2"></v-divider>
 
         <!-- Link Admin Login Mobile -->
-        <v-list-item to="/admin/login" link color="blue-grey">
+        <v-list-item to="/login-admin" link color="blue-grey">
           <template v-slot:prepend
             ><v-icon>mdi-shield-crown-outline</v-icon></template
           >

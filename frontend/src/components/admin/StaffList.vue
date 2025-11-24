@@ -176,6 +176,7 @@ import * as yup from "yup";
 import api from "@/services/api.service";
 
 const props = defineProps({ users: { type: Array, default: () => [] } });
+const emit = defineEmits(["refresh"]); // Định nghĩa emit
 
 const message = ref("");
 const messageType = ref("");
@@ -183,9 +184,19 @@ const dialog = ref(false);
 const search = ref("");
 const readers = ref([...props.users]);
 
+// === QUAN TRỌNG: Thêm watch để cập nhật danh sách khi props thay đổi ===
+watch(
+  () => props.users,
+  (newUsers) => {
+    readers.value = [...newUsers];
+  }
+);
+// ======================================================================
+
 const currentPage = ref(1);
 const itemsPerPage = ref(5);
 
+// ... (Giữ nguyên phần Schema validation) ...
 const readerSchema = yup.object({
   name: yup
     .string()
@@ -204,6 +215,7 @@ const readerSchema = yup.object({
   status: yup.string().required("Vui lòng chọn trạng thái"),
 });
 
+// ... (Giữ nguyên phần Computed & Watch search) ...
 const filteredReaders = computed(() =>
   readers.value.filter((r) =>
     (r.ho_ten + r.email).toLowerCase().includes(search.value.toLowerCase())
@@ -251,7 +263,13 @@ async function saveReader(values) {
     const res = await api.post("/api/users/register", payload);
     message.value = "Thêm quản trị thành công!";
     messageType.value = "success";
-    readers.value.unshift(res.data); // lấy dữ liệu trả về từ server
+
+    // 1. Thêm vào danh sách hiện tại ngay lập tức
+    readers.value.unshift(res.data);
+
+    // 2. Yêu cầu cha đồng bộ lại dữ liệu
+    emit("refresh");
+
     closeDialog();
   } catch (err) {
     message.value =
@@ -265,9 +283,15 @@ async function deleteReader(userId) {
   if (!confirm("Bạn có chắc chắn muốn xoá quản trị này không?")) return;
   try {
     await api.delete(`/api/users/${userId}`);
+
+    // Xóa khỏi danh sách hiện tại ngay lập tức
     readers.value = readers.value.filter((r) => r._id !== userId);
+
     message.value = "Xoá người dùng thành công!";
     messageType.value = "success";
+
+    // Yêu cầu cha đồng bộ lại
+    emit("refresh");
   } catch (err) {
     message.value =
       "Không thể xoá quản trị: " + (err.response?.data?.message || err.message);

@@ -172,6 +172,8 @@ const props = defineProps({
   users: { type: Array, default: () => [] },
 });
 
+const emit = defineEmits(["refresh"]);
+
 const message = ref("");
 const messageType = ref("");
 const dialog = ref(false);
@@ -246,7 +248,8 @@ async function saveReader(values) {
     await api.post("/api/users/register", payload);
     message.value = "Thêm độc giả thành công!";
     messageType.value = "success";
-    readers.value.unshift(payload); // thêm vào danh sách hiện tại
+    readers.value.unshift(payload);
+    emit("refresh"); // thêm vào danh sách hiện tại
     dialog.value = false;
   } catch (err) {
     message.value =
@@ -263,6 +266,7 @@ async function deleteReader(userId) {
     readers.value = readers.value.filter((r) => r._id !== userId);
     message.value = "Xoá người dùng thành công!";
     messageType.value = "success";
+    emit("refresh");
   } catch (err) {
     message.value =
       "Không thể xoá độc giả: " + (err.response?.data?.message || err.message);

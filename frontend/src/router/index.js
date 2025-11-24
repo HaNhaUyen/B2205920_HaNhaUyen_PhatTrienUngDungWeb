@@ -119,11 +119,6 @@ const routes = [
         name: "EditBorrow",
         component: () => import("@/components/admin/EditBorrow.vue"),
       },
-      {
-        path: "profile",
-        name: "AdminProfile",
-        component: () => import("@/views/admin/AdminProfile.vue"),
-      },
     ],
   },
 
