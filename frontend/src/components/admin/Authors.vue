@@ -6,18 +6,6 @@
       <v-btn color="primary" @click="openDialog()">Thêm tác giả</v-btn>
     </div>
 
-    <!-- Message -->
-    <span
-      v-if="message"
-      :class="{
-        'text-green-600': messageType === 'success',
-        'text-red-600': messageType === 'error',
-        'block text-center mb-4 font-medium': true,
-      }"
-    >
-      {{ message }}
-    </span>
-
     <!-- Search -->
     <v-text-field
       v-model="search"
@@ -57,10 +45,15 @@
             </v-btn>
           </td>
         </tr>
+        <tr v-if="paginatedAuthors.length === 0">
+          <td colspan="5" class="text-center py-4 text-gray-500">
+            Không có tác giả nào.
+          </td>
+        </tr>
       </tbody>
     </v-table>
 
-    <!-- Phân trang giống BookCatalog -->
+    <!-- Phân trang -->
     <v-row class="mt-10">
       <v-col cols="12" class="flex justify-center items-center space-x-4">
         <v-pagination
@@ -70,7 +63,7 @@
           density="comfortable"
           rounded="circle"
           active-color="gray-900"
-        ></v-pagination>
+        />
       </v-col>
     </v-row>
 
@@ -81,7 +74,11 @@
           Thêm Tác giả
         </v-card-title>
         <v-card-text>
-          <Form @submit="saveAuthor" :validation-schema="authorSchema">
+          <Form
+            @submit="saveAuthor"
+            :validation-schema="authorSchema"
+            v-slot="{ setFieldError }"
+          >
             <Field name="name" v-slot="{ field, errorMessage }">
               <v-text-field
                 v-bind="field"
@@ -129,9 +126,6 @@ const search = ref("");
 const itemsPerPage = ref(5);
 const currentPage = ref(1);
 
-const message = ref("");
-const messageType = ref("");
-
 // Yup validation schema
 const authorSchema = yup.object({
   name: yup.string().required("Vui lòng nhập tên tác giả"),
@@ -167,23 +161,33 @@ function closeDialog() {
   dialog.value = false;
 }
 
-// Thêm tác giả
-async function saveAuthor(values) {
+// Thêm tác giả với lỗi hiển thị trên field ngay lập tức
+async function saveAuthor(values, { setFieldError }) {
   try {
     const payload = {
       ho_ten: values.name,
       tieu_su: values.biography,
       quoc_tich: values.nationality,
     };
+
+    // Kiểm tra trùng tên ngay frontend
+    const exists = authors.value.find(
+      (a) => a.ho_ten.toLowerCase() === values.name.trim().toLowerCase()
+    );
+    if (exists) {
+      setFieldError("name", "Tên tác giả đã tồn tại!");
+      return;
+    }
+
     await api.post("/api/authors", payload);
-    message.value = "Thêm tác giả thành công!";
-    messageType.value = "success";
+
     await fetchAuthors();
     closeDialog();
   } catch (err) {
-    message.value =
-      "Lỗi khi lưu tác giả: " + (err.response?.data?.message || err.message);
-    messageType.value = "error";
+    setFieldError(
+      "name",
+      err.response?.data?.message || "Lỗi khi lưu tác giả!"
+    );
   }
 }
 
@@ -192,13 +196,12 @@ async function deleteAuthor(id) {
   if (confirm("Bạn có chắc chắn muốn xoá tác giả này?")) {
     try {
       await api.delete(`/api/authors/${id}`);
-      message.value = "Xoá tác giả thành công!";
-      messageType.value = "success";
       await fetchAuthors();
     } catch (err) {
-      message.value =
-        "Lỗi khi xoá tác giả: " + (err.response?.data?.message || err.message);
-      messageType.value = "error";
+      console.error(
+        "Lỗi khi xoá tác giả:",
+        err.response?.data?.message || err.message
+      );
     }
   }
 }

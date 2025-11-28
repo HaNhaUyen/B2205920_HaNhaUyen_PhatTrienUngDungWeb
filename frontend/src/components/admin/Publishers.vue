@@ -5,17 +5,6 @@
       <v-btn color="primary" @click="openDialog()">Thêm NXB</v-btn>
     </div>
 
-    <span
-      v-if="message"
-      :class="{
-        'text-green-600': messageType === 'success',
-        'text-red-600': messageType === 'error',
-        'block text-center mb-4 font-medium': true,
-      }"
-    >
-      {{ message }}
-    </span>
-
     <v-text-field
       v-model="search"
       label="Tìm kiếm NXB"
@@ -82,7 +71,11 @@
           {{ "Thêm NXB" }}
         </v-card-title>
         <v-card-text>
-          <Form @submit="savePublisher" :validation-schema="publisherSchema">
+          <Form
+            @submit="savePublisher"
+            :validation-schema="publisherSchema"
+            v-slot="{ setFieldError }"
+          >
             <Field name="name" v-slot="{ field, errorMessage }">
               <v-text-field
                 v-bind="field"
@@ -118,8 +111,6 @@ import api from "@/services/api.service";
 
 const dialog = ref(false);
 const search = ref("");
-const message = ref("");
-const messageType = ref("");
 const publishers = ref([]);
 
 const currentPage = ref(1);
@@ -170,17 +161,30 @@ async function fetchPublishers() {
   }
 }
 
-async function savePublisher(values) {
+async function savePublisher(values, { setFieldError }) {
   try {
     const payload = { ten_nxb: values.name, dia_chi: values.address };
+
+    // Kiểm tra trùng tên trước khi gửi request
+    const exists = publishers.value.find(
+      (p) => p.ten_nxb.toLowerCase() === values.name.trim().toLowerCase()
+    );
+    if (exists) {
+      setFieldError("name", "Tên NXB đã tồn tại!");
+      return;
+    }
+
     await api.post("/api/publishers", payload);
-    message.value = "Thêm NXB thành công!";
-    messageType.value = "success";
+
+    // Tự động đóng dialog và reset form
+    setTimeout(() => closeDialog(), 300);
+
     await fetchPublishers();
-    closeDialog();
   } catch (err) {
-    message.value = "Lỗi: " + (err.response?.data?.message || err.message);
-    messageType.value = "error";
+    setFieldError(
+      "name",
+      "Lỗi: " + (err.response?.data?.message || err.message)
+    );
   }
 }
 
@@ -188,13 +192,9 @@ async function deletePublisher(id) {
   if (confirm("Bạn có chắc chắn muốn xoá NXB này?")) {
     try {
       await api.delete(`/api/publishers/${id}`);
-      message.value = "Xoá thành công!";
-      messageType.value = "success";
       await fetchPublishers();
     } catch (err) {
-      message.value =
-        "Lỗi khi xoá: " + (err.response?.data?.message || err.message);
-      messageType.value = "error";
+      console.error("Lỗi khi xoá:", err.response?.data?.message || err.message);
     }
   }
 }
