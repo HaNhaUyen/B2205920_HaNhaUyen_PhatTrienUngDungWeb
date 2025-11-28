@@ -101,10 +101,10 @@ class UserService {
       // Tính ngày bắt đầu và kết thúc cho thống kê 7 ngày gần đây (không tính hôm nay)
       const today = new Date();
       const startDate = new Date(today);
-      startDate.setDate(startDate.getDate() - 7); // 7 ngày trước
+      startDate.setDate(startDate.getDate() - 6); // 7 ngày trước
       startDate.setHours(0, 0, 0, 0);
       const endDate = new Date(today);
-      endDate.setDate(endDate.getDate() - 1); // hôm qua
+      //endDate.setDate(endDate.getDate() - 1); // hôm qua
       endDate.setHours(23, 59, 59, 999);
       // Tính tổng tiền phạt bằng aggregate + toArray()
       const totalFinesResult = await this.Borrow.aggregate([

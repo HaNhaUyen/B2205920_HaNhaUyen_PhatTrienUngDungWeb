@@ -5,7 +5,6 @@
     <TopBooks :books="topBooksList" />
     <BookList :books="generalBooksList" />
     <FeatureHighlight />
-    <Testimonials />
     <CallToAction />
     <FooterInfo />
   </v-app>
@@ -15,7 +14,6 @@
 import CategoryCarousel from "@/components/CategoryCarousel.vue";
 import BookList from "@/components/BookList.vue";
 import FeatureHighlight from "@/components/FeatureHighlight.vue";
-import Testimonials from "@/components/Testimonials.vue";
 import CallToAction from "@/components/CallToAction.vue";
 import FooterInfo from "@/components/FooterInfo.vue";
 import TopBooks from "@/components/TopBooks.vue";
@@ -31,7 +29,6 @@ export default {
     FooterInfo,
     CategoryCarousel,
     CallToAction,
-    Testimonials,
     TopBooks,
   },
   data() {
