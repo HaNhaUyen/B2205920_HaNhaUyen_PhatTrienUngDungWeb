@@ -19,25 +19,25 @@ class UserService {
       trang_thai: payload.trang_thai ?? "active",
       ngay_tao: new Date(),
       anh_dai_dien: payload.avatar || null,
+
+      // ➤ THÊM 2 TRƯỜNG MỚI
+      phai: payload.phai || null,
+      ngaysinh: payload.ngaysinh ? new Date(payload.ngaysinh) : null,
     };
 
-    // Xoá các trường undetien_phatd
     Object.keys(user).forEach(
       (key) => user[key] === undefined && delete user[key]
     );
+
     return user;
   }
 
   async create(payload) {
     const user = this.extractUserData(payload);
-    const result = await this.User.findOneAndUpdate(
-      { email: user.email },
-      { $set: user },
-      { returnDocument: "after", upsert: true }
-    );
-    console.log(result);
+    user.ngay_tao = new Date();
 
-    return result;
+    const result = await this.User.insertOne(user);
+    return { value: { _id: result.insertedId, ...user } };
   }
 
   async find(filter) {
@@ -58,15 +58,31 @@ class UserService {
   }
 
   async update(id, payload) {
-    const filter = {
-      _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
-    };
-    const update = this.extractUserData(payload);
+    const filter = { _id: ObjectId.isValid(id) ? new ObjectId(id) : null };
+
+    const updateData = {};
+    if (payload.ho_ten) updateData.ho_ten = payload.ho_ten;
+    if (payload.email) updateData.email = payload.email;
+    if (payload.so_dien_thoai) updateData.so_dien_thoai = payload.so_dien_thoai;
+    if (payload.dia_chi) updateData.dia_chi = payload.dia_chi;
+    if (payload.trang_thai) updateData.trang_thai = payload.trang_thai;
+    if (payload.vai_tro) updateData.vai_tro = payload.vai_tro;
+    if (payload.anh_dai_dien !== undefined)
+      updateData.anh_dai_dien = payload.anh_dai_dien;
+
+    // 2 trường mới
+    if (payload.phai !== undefined) updateData.phai = payload.phai;
+    if (payload.ngaysinh !== undefined)
+      updateData.ngaysinh = payload.ngaysinh
+        ? new Date(payload.ngaysinh)
+        : null;
+
     const result = await this.User.findOneAndUpdate(
       filter,
-      { $set: update },
+      { $set: updateData },
       { returnDocument: "after" }
     );
+
     return result;
   }
 

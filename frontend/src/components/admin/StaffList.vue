@@ -26,8 +26,6 @@
       @input="resetPagination"
     />
 
-    <!-- Items per page -->
-
     <!-- Table -->
     <v-table>
       <thead>
@@ -37,6 +35,9 @@
           <th>Email</th>
           <th>Số điện thoại</th>
           <th>Địa chỉ</th>
+          <!-- Đã chuyển Giới tính & Ngày sinh xuống đây -->
+          <th>Giới tính</th>
+          <th>Ngày sinh</th>
           <th>Trạng thái</th>
           <th>Hành động</th>
         </tr>
@@ -48,6 +49,13 @@
           <td>{{ reader.email }}</td>
           <td>{{ reader.so_dien_thoai || "" }}</td>
           <td>{{ reader.dia_chi || "" }}</td>
+
+          <!-- Hiển thị Giới tính (sau địa chỉ) -->
+          <td>{{ reader.phai || "---" }}</td>
+
+          <!-- Hiển thị Ngày sinh (sau địa chỉ) -->
+          <td>{{ formatDate(reader.ngaysinh) }}</td>
+
           <td>
             <v-chip
               :color="reader.trang_thai === 'active' ? 'green' : 'red'"
@@ -62,17 +70,23 @@
               color="blue"
               class="mr-2 my-2"
               icon
+              size="small"
               @click="$router.push(`/admin/users/edit/${reader._id}`)"
             >
               <v-icon>mdi-pencil</v-icon>
             </v-btn>
-            <v-btn icon color="red" @click="deleteReader(reader._id)">
+            <v-btn
+              icon
+              color="red"
+              size="small"
+              @click="deleteReader(reader._id)"
+            >
               <v-icon>mdi-delete</v-icon>
             </v-btn>
           </td>
         </tr>
         <tr v-if="paginatedReaders.length === 0">
-          <td colspan="7" class="text-center py-4 text-gray-500">
+          <td colspan="9" class="text-center py-4 text-gray-500">
             Không có quản trị nào.
           </td>
         </tr>
@@ -95,72 +109,164 @@
     <!-- Dialog thêm -->
     <v-dialog v-model="dialog" max-width="600px">
       <v-card>
-        <v-card-title class="text-h5 grey lighten-2"
-          >Thêm quản trị</v-card-title
+        <v-card-title class="text-h5 bg-gray-100 pa-4"
+          >Thêm quản trị viên</v-card-title
         >
-        <v-card-text>
+        <v-card-text class="pa-4">
           <Form @submit="saveReader" :validation-schema="readerSchema">
-            <Field name="name" v-slot="{ field, errorMessage, handleBlur }">
-              <v-text-field
-                v-bind="field"
-                @blur="handleBlur"
-                :error-messages="errorMessage"
-                label="Tên"
-                clearable
-              />
-            </Field>
-            <Field name="email" v-slot="{ field, errorMessage, handleBlur }">
-              <v-text-field
-                v-bind="field"
-                @blur="handleBlur"
-                :error-messages="errorMessage"
-                label="Email"
-                clearable
-              />
-            </Field>
-            <Field name="phone" v-slot="{ field, errorMessage, handleBlur }">
-              <v-text-field
-                v-bind="field"
-                @blur="handleBlur"
-                :error-messages="errorMessage"
-                label="Số điện thoại"
-                clearable
-              />
-            </Field>
-            <Field name="address" v-slot="{ field, errorMessage, handleBlur }">
-              <v-text-field
-                v-bind="field"
-                @blur="handleBlur"
-                :error-messages="errorMessage"
-                label="Địa chỉ"
-                clearable
-              />
-            </Field>
-            <Field name="password" v-slot="{ field, errorMessage, handleBlur }">
-              <v-text-field
-                v-bind="field"
-                @blur="handleBlur"
-                :error-messages="errorMessage"
-                label="Mật khẩu"
-                type="password"
-                clearable
-              />
-            </Field>
-            <Field name="status" v-slot="{ field, errorMessage, handleBlur }">
-              <v-select
-                :items="['Hoạt động', 'Khóa']"
-                v-bind="field"
-                @blur="handleBlur"
-                :error-messages="errorMessage"
-                label="Trạng thái"
-                clearable
-              />
-            </Field>
+            <v-row dense>
+              <!-- 1. Tên -->
+              <v-col cols="12">
+                <Field name="name" v-slot="{ field, errorMessage, handleBlur }">
+                  <v-text-field
+                    v-bind="field"
+                    @blur="handleBlur"
+                    :error-messages="errorMessage"
+                    label="Họ và tên"
+                    variant="outlined"
+                    density="comfortable"
+                    clearable
+                  />
+                </Field>
+              </v-col>
 
-            <v-card-actions>
+              <!-- 2. Email -->
+              <v-col cols="12" md="6">
+                <Field
+                  name="email"
+                  v-slot="{ field, errorMessage, handleBlur }"
+                >
+                  <v-text-field
+                    v-bind="field"
+                    @blur="handleBlur"
+                    :error-messages="errorMessage"
+                    label="Email"
+                    variant="outlined"
+                    density="comfortable"
+                    clearable
+                  />
+                </Field>
+              </v-col>
+
+              <!-- 3. Số điện thoại -->
+              <v-col cols="12" md="6">
+                <Field
+                  name="phone"
+                  v-slot="{ field, errorMessage, handleBlur }"
+                >
+                  <v-text-field
+                    v-bind="field"
+                    @blur="handleBlur"
+                    :error-messages="errorMessage"
+                    label="Số điện thoại"
+                    variant="outlined"
+                    density="comfortable"
+                    clearable
+                  />
+                </Field>
+              </v-col>
+
+              <!-- 4. Địa chỉ -->
+              <v-col cols="12">
+                <Field
+                  name="address"
+                  v-slot="{ field, errorMessage, handleBlur }"
+                >
+                  <v-text-field
+                    v-bind="field"
+                    @blur="handleBlur"
+                    :error-messages="errorMessage"
+                    label="Địa chỉ"
+                    variant="outlined"
+                    density="comfortable"
+                    clearable
+                  />
+                </Field>
+              </v-col>
+
+              <!-- 5. Giới tính (Đã chuyển xuống đây) -->
+              <v-col cols="12" md="6">
+                <Field
+                  name="gender"
+                  v-slot="{ field, errorMessage, handleBlur }"
+                >
+                  <v-select
+                    v-bind="field"
+                    @blur="handleBlur"
+                    :items="['Nam', 'Nữ']"
+                    :error-messages="errorMessage"
+                    label="Giới tính"
+                    variant="outlined"
+                    density="comfortable"
+                    clearable
+                  />
+                </Field>
+              </v-col>
+
+              <!-- 6. Ngày sinh (Đã chuyển xuống đây) -->
+              <v-col cols="12" md="6">
+                <Field
+                  name="birthdate"
+                  v-slot="{ field, errorMessage, handleBlur }"
+                >
+                  <v-text-field
+                    v-bind="field"
+                    @blur="handleBlur"
+                    :error-messages="errorMessage"
+                    label="Ngày sinh"
+                    type="date"
+                    variant="outlined"
+                    density="comfortable"
+                    clearable
+                  />
+                </Field>
+              </v-col>
+
+              <!-- 7. Mật khẩu -->
+              <v-col cols="12" md="6">
+                <Field
+                  name="password"
+                  v-slot="{ field, errorMessage, handleBlur }"
+                >
+                  <v-text-field
+                    v-bind="field"
+                    @blur="handleBlur"
+                    :error-messages="errorMessage"
+                    label="Mật khẩu"
+                    type="password"
+                    variant="outlined"
+                    density="comfortable"
+                    clearable
+                  />
+                </Field>
+              </v-col>
+
+              <!-- 8. Trạng thái -->
+              <v-col cols="12" md="6">
+                <Field
+                  name="status"
+                  v-slot="{ field, errorMessage, handleBlur }"
+                >
+                  <v-select
+                    :items="['Hoạt động', 'Khóa']"
+                    v-bind="field"
+                    @blur="handleBlur"
+                    :error-messages="errorMessage"
+                    label="Trạng thái"
+                    variant="outlined"
+                    density="comfortable"
+                    clearable
+                  />
+                </Field>
+              </v-col>
+            </v-row>
+
+            <v-card-actions class="mt-4 px-0">
               <v-spacer />
-              <v-btn color="blue-grey" text @click="closeDialog">Hủy</v-btn>
-              <v-btn color="primary" type="submit">Lưu</v-btn>
+              <v-btn color="grey-darken-1" variant="text" @click="closeDialog"
+                >Hủy</v-btn
+              >
+              <v-btn color="primary" variant="flat" type="submit">Lưu</v-btn>
             </v-card-actions>
           </Form>
         </v-card-text>
@@ -176,7 +282,7 @@ import * as yup from "yup";
 import api from "@/services/api.service";
 
 const props = defineProps({ users: { type: Array, default: () => [] } });
-const emit = defineEmits(["refresh"]); // Định nghĩa emit
+const emit = defineEmits(["refresh"]);
 
 const message = ref("");
 const messageType = ref("");
@@ -184,19 +290,18 @@ const dialog = ref(false);
 const search = ref("");
 const readers = ref([...props.users]);
 
-// === QUAN TRỌNG: Thêm watch để cập nhật danh sách khi props thay đổi ===
+// Cập nhật danh sách khi props thay đổi
 watch(
   () => props.users,
   (newUsers) => {
     readers.value = [...newUsers];
   }
 );
-// ======================================================================
 
 const currentPage = ref(1);
 const itemsPerPage = ref(5);
 
-// ... (Giữ nguyên phần Schema validation) ...
+// Validation Schema
 const readerSchema = yup.object({
   name: yup
     .string()
@@ -206,6 +311,11 @@ const readerSchema = yup.object({
     .string()
     .email("Email không hợp lệ")
     .required("Vui lòng nhập email"),
+  gender: yup.string().required("Vui lòng chọn giới tính"),
+  birthdate: yup
+    .date()
+    .required("Vui lòng chọn ngày sinh")
+    .typeError("Ngày sinh không hợp lệ"),
   phone: yup.string().nullable(),
   address: yup.string().nullable(),
   password: yup
@@ -215,7 +325,13 @@ const readerSchema = yup.object({
   status: yup.string().required("Vui lòng chọn trạng thái"),
 });
 
-// ... (Giữ nguyên phần Computed & Watch search) ...
+// Helpers
+const formatDate = (dateString) => {
+  if (!dateString) return "---";
+  return new Date(dateString).toLocaleDateString("vi-VN");
+};
+
+// ... Pagination & Search logic
 const filteredReaders = computed(() =>
   readers.value.filter((r) =>
     (r.ho_ten + r.email).toLowerCase().includes(search.value.toLowerCase())
@@ -255,6 +371,8 @@ async function saveReader(values) {
     email: values.email,
     so_dien_thoai: values.phone,
     dia_chi: values.address,
+    phai: values.gender,
+    ngaysinh: values.birthdate,
     mat_khau: values.password,
     trang_thai: values.status === "Khóa" ? "inactive" : "active",
     vai_tro: "admin",
@@ -264,17 +382,12 @@ async function saveReader(values) {
     message.value = "Thêm quản trị thành công!";
     messageType.value = "success";
 
-    // 1. Thêm vào danh sách hiện tại ngay lập tức
     readers.value.unshift(res.data);
-
-    // 2. Yêu cầu cha đồng bộ lại dữ liệu
     emit("refresh");
-
     closeDialog();
   } catch (err) {
     message.value =
-      "Có lỗi xảy ra khi lưu quản trị: " +
-      (err.response?.data?.message || err.message);
+      "Có lỗi xảy ra: " + (err.response?.data?.message || err.message);
     messageType.value = "error";
   }
 }
@@ -283,18 +396,13 @@ async function deleteReader(userId) {
   if (!confirm("Bạn có chắc chắn muốn xoá quản trị này không?")) return;
   try {
     await api.delete(`/api/users/${userId}`);
-
-    // Xóa khỏi danh sách hiện tại ngay lập tức
     readers.value = readers.value.filter((r) => r._id !== userId);
-
     message.value = "Xoá người dùng thành công!";
     messageType.value = "success";
-
-    // Yêu cầu cha đồng bộ lại
     emit("refresh");
   } catch (err) {
     message.value =
-      "Không thể xoá quản trị: " + (err.response?.data?.message || err.message);
+      "Không thể xoá: " + (err.response?.data?.message || err.message);
     messageType.value = "error";
   }
 }

@@ -31,6 +31,8 @@
           <th>Email</th>
           <th>Số điện thoại</th>
           <th>Địa chỉ</th>
+          <th>Giới tính</th>
+          <th>Ngày sinh</th>
           <th>Trạng thái</th>
           <th>Hành động</th>
         </tr>
@@ -42,6 +44,8 @@
           <td>{{ reader.email }}</td>
           <td>{{ reader.so_dien_thoai || "" }}</td>
           <td>{{ reader.dia_chi || "" }}</td>
+          <td>{{ reader.phai || "" }}</td>
+          <td>{{ reader.ngaysinh ? reader.ngaysinh.split("T")[0] : "" }}</td>
           <td>
             <v-chip
               :color="reader.trang_thai === 'active' ? 'green' : 'red'"
@@ -66,7 +70,7 @@
           </td>
         </tr>
         <tr v-if="paginatedReaders.length === 0">
-          <td colspan="7" class="text-center py-4 text-gray-500">
+          <td colspan="9" class="text-center py-4 text-gray-500">
             Không có độc giả nào.
           </td>
         </tr>
@@ -130,6 +134,30 @@
                 clearable
               />
             </Field>
+            <Field name="gender" v-slot="{ field, errorMessage, handleBlur }">
+              <v-select
+                :items="['Nam', 'Nữ', 'Khác']"
+                v-bind="field"
+                @blur="handleBlur"
+                :error-messages="errorMessage"
+                label="Giới tính"
+                clearable
+              />
+            </Field>
+
+            <Field
+              name="birthdate"
+              v-slot="{ field, errorMessage, handleBlur }"
+            >
+              <v-text-field
+                v-bind="field"
+                type="date"
+                @blur="handleBlur"
+                :error-messages="errorMessage"
+                label="Ngày sinh"
+              />
+            </Field>
+
             <Field name="password" v-slot="{ field, errorMessage, handleBlur }">
               <v-text-field
                 v-bind="field"
@@ -183,6 +211,7 @@ const readers = ref([...props.users]);
 const currentPage = ref(1);
 const itemsPerPage = ref(5);
 
+// Schema — KHÔNG LẶP LẠI
 const readerSchema = yup.object({
   name: yup
     .string()
@@ -198,6 +227,11 @@ const readerSchema = yup.object({
     .string()
     .required("Vui lòng nhập mật khẩu")
     .min(6, "Tối thiểu 6 ký tự"),
+  gender: yup.string().required("Vui lòng chọn giới tính"),
+  birthdate: yup
+    .date()
+    .required("Vui lòng chọn ngày sinh")
+    .typeError("Ngày sinh không hợp lệ"),
   status: yup.string().required("Vui lòng chọn trạng thái"),
 });
 
@@ -219,21 +253,24 @@ const paginatedReaders = computed(() => {
 
 watch(search, () => (currentPage.value = 1));
 
-function resetPagination() {
-  currentPage.value = 1;
-}
 function updatePagination() {
-  if (currentPage.value > totalPages.value)
+  if (currentPage.value > totalPages.value) {
     currentPage.value = totalPages.value || 1;
+  }
 }
 
-function openDialog(reader = null) {
+function openDialog() {
   dialog.value = true;
+  setTimeout(() => {
+    document.querySelector("form")?.reset();
+  }, 50);
 }
+
 function closeDialog() {
   dialog.value = false;
 }
 
+// SAVE
 async function saveReader(values) {
   const payload = {
     ho_ten: values.name,
@@ -243,24 +280,30 @@ async function saveReader(values) {
     mat_khau: values.password,
     trang_thai: values.status === "Khóa" ? "inactive" : "active",
     vai_tro: "reader",
+    phai: values.gender,
+    ngaysinh: new Date(values.birthdate + "T00:00:00"),
   };
+
   try {
-    await api.post("/api/users/register", payload);
+    const { data } = await api.post("/api/users/register", payload);
+
+    readers.value.unshift(data.user); // có _id
     message.value = "Thêm độc giả thành công!";
     messageType.value = "success";
-    readers.value.unshift(payload);
-    emit("refresh"); // thêm vào danh sách hiện tại
+
+    emit("refresh");
     dialog.value = false;
   } catch (err) {
     message.value =
-      "Có lỗi xảy ra khi lưu độc giả: " +
-      (err.response?.data?.message || err.message);
+      "Có lỗi xảy ra: " + (err.response?.data?.message || err.message);
     messageType.value = "error";
   }
 }
 
+// DELETE
 async function deleteReader(userId) {
   if (!confirm("Bạn có chắc chắn muốn xoá độc giả này không?")) return;
+
   try {
     await api.delete(`/api/users/${userId}`);
     readers.value = readers.value.filter((r) => r._id !== userId);

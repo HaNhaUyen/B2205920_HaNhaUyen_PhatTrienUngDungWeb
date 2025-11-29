@@ -15,6 +15,8 @@ exports.register = async (req, res, next) => {
     mat_khau,
     trang_thai,
     vai_tro,
+    phai, // <── thêm giới tính
+    ngaysinh, // <── thêm ngày sinh
   } = req.body;
 
   if (!ho_ten || !email || !mat_khau) {
@@ -23,9 +25,7 @@ exports.register = async (req, res, next) => {
 
   try {
     const userService = new UserService(MongoDB.client);
-    const existing = await userService.find({
-      $or: [{ email }],
-    });
+    const existing = await userService.find({ $or: [{ email }] });
 
     if (existing.length > 0) {
       return next(new ApiError(400, "Email người dùng đã tồn tại"));
@@ -41,9 +41,12 @@ exports.register = async (req, res, next) => {
       mat_khau: hashedPassword,
       trang_thai,
       vai_tro,
+      phai: phai || null, // <── thêm
+      ngaysinh: ngaysinh ? new Date(ngaysinh) : null, // <── thêm
     };
 
     const result = await userService.create(newUser);
+
     return res.status(201).json({
       message: "Đăng ký người dùng thành công",
       user: result.value,
@@ -91,6 +94,8 @@ exports.login = async (req, res, next) => {
         email: user.email,
         role: user.vai_tro,
         anh_dai_dien: user.anh_dai_dien || null,
+        phai: user.phai || null, // <── thêm
+        ngaysinh: user.ngaysinh || null, // <── thêm
       },
     });
   } catch (error) {

@@ -1,8 +1,7 @@
 <template>
   <v-container class="fill-height bg-grey-lighten-5 py-10" fluid>
     <div class="w-100" style="max-width: 1000px; margin: 0 auto" v-if="user">
-      <!-- 1. SECTION: THÔNG TIN CÁ NHÂN (PROFILE CARD) -->
-      <!-- Hiển thị cho cả Admin và Reader -->
+      <!-- 1. SECTION: PROFILE CARD -->
       <v-card class="rounded-xl elevation-3 overflow-hidden mb-8">
         <!-- Cover Image Gradient -->
         <div class="profile-cover"></div>
@@ -14,6 +13,7 @@
             style="margin-top: -50px; margin-bottom: 20px"
           >
             <div class="d-flex align-end">
+              <!-- Avatar người dùng -->
               <v-avatar size="120" class="profile-avatar elevation-4">
                 <v-img
                   :src="user.anh_dai_dien || user.avatar || defaultAvatar"
@@ -21,6 +21,7 @@
                   cover
                 ></v-img>
               </v-avatar>
+              <!-- Info người dùng (chỉ hiện trên sm+) -->
               <div class="ml-4 mb-2 d-none d-sm-block">
                 <h2 class="text-h4 font-weight-bold text-blue-grey-darken-4">
                   {{ user.ho_ten }}
@@ -44,6 +45,7 @@
               </div>
             </div>
 
+            <!-- Button chỉnh sửa profile -->
             <v-btn
               color="blue-grey-darken-4"
               variant="flat"
@@ -56,7 +58,7 @@
             </v-btn>
           </div>
 
-          <!-- Mobile Name View (Shown only on small screens) -->
+          <!-- Mobile Name View (chỉ hiện trên sm-) -->
           <div class="d-sm-none mb-6 text-center">
             <h2 class="text-h5 font-weight-bold">{{ user.ho_ten }}</h2>
             <div
@@ -68,23 +70,45 @@
 
           <v-divider class="mb-6"></v-divider>
 
-          <!-- User Details Grid -->
+          <!-- User Details Grid: Full Fields -->
           <v-row>
+            <!-- Giới tính -->
             <v-col cols="12" sm="6" md="4">
               <div class="d-flex align-start">
                 <v-icon color="grey-darken-1" class="mr-3 mt-1"
-                  >mdi-email-outline</v-icon
+                  >mdi-gender-male-female</v-icon
                 >
                 <div>
                   <div
                     class="text-caption text-grey-darken-1 font-weight-bold text-uppercase"
                   >
-                    Email
+                    Giới tính
                   </div>
-                  <div class="text-body-1">{{ user.email }}</div>
+                  <div class="text-body-1">{{ user.phai || "---" }}</div>
                 </div>
               </div>
             </v-col>
+
+            <!-- Ngày sinh -->
+            <v-col cols="12" sm="6" md="4">
+              <div class="d-flex align-start">
+                <v-icon color="grey-darken-1" class="mr-3 mt-1"
+                  >mdi-cake-variant-outline</v-icon
+                >
+                <div>
+                  <div
+                    class="text-caption text-grey-darken-1 font-weight-bold text-uppercase"
+                  >
+                    Ngày sinh
+                  </div>
+                  <div class="text-body-1">
+                    {{ formatDate(user.ngaysinh) }}
+                  </div>
+                </div>
+              </div>
+            </v-col>
+
+            <!-- Số điện thoại -->
             <v-col cols="12" sm="6" md="4">
               <div class="d-flex align-start">
                 <v-icon color="grey-darken-1" class="mr-3 mt-1"
@@ -100,7 +124,26 @@
                 </div>
               </div>
             </v-col>
+
+            <!-- Email -->
             <v-col cols="12" sm="6" md="4">
+              <div class="d-flex align-start">
+                <v-icon color="grey-darken-1" class="mr-3 mt-1"
+                  >mdi-email-outline</v-icon
+                >
+                <div>
+                  <div
+                    class="text-caption text-grey-darken-1 font-weight-bold text-uppercase"
+                  >
+                    Email
+                  </div>
+                  <div class="text-body-1">{{ user.email }}</div>
+                </div>
+              </div>
+            </v-col>
+
+            <!-- Địa chỉ -->
+            <v-col cols="12" sm="12" md="8">
               <div class="d-flex align-start">
                 <v-icon color="grey-darken-1" class="mr-3 mt-1"
                   >mdi-map-marker-outline</v-icon
@@ -121,7 +164,7 @@
 
       <!-- 2. SECTION: LOGIC ẨN/HIỆN THEO ROLE -->
       <template v-if="user.vai_tro !== 'admin'">
-        <!-- Bảng sách đã mượn -->
+        <!-- 2a. Lịch sử mượn sách -->
         <v-card class="rounded-xl elevation-2 mb-8 border-thin">
           <v-card-title class="px-6 pt-6 pb-2 d-flex align-center">
             <v-icon color="primary" class="mr-2">mdi-book-clock-outline</v-icon>
@@ -219,7 +262,7 @@
           </v-card-text>
         </v-card>
 
-        <!-- Đánh giá đã viết -->
+        <!-- 2b. Đánh giá đã viết -->
         <v-card class="rounded-xl elevation-2 border-thin">
           <v-card-title
             class="px-6 pt-6 pb-2 d-flex align-center justify-space-between"
@@ -230,7 +273,6 @@
               >
               <span class="text-h6 font-weight-bold">Đánh giá của bạn</span>
             </div>
-            <!-- Alert Message Mini -->
             <v-fade-transition>
               <v-chip
                 v-if="deleteMessage"
@@ -290,29 +332,30 @@
         </v-card>
       </template>
 
-      <!-- Dialog chỉnh sửa (Giữ nguyên logic) -->
+      <!-- 3. Dialog chỉnh sửa profile -->
       <v-dialog
         v-model="editDialog"
-        max-width="500"
+        max-width="600"
         persistent
         transition="dialog-bottom-transition"
       >
         <v-card class="rounded-xl pa-2">
-          <v-card-title class="text-h6 font-weight-bold pa-4 pb-2">
-            Chỉnh sửa hồ sơ
-          </v-card-title>
+          <v-card-title class="text-h6 font-weight-bold pa-4 pb-2"
+            >Chỉnh sửa hồ sơ</v-card-title
+          >
 
           <v-card-text class="pa-4 pt-0">
+            <!-- Error alert -->
             <v-alert
               v-if="serverError"
               type="error"
               variant="tonal"
               density="compact"
               class="mb-4"
+              >{{ serverError }}</v-alert
             >
-              {{ serverError }}
-            </v-alert>
 
+            <!-- Avatar upload -->
             <div class="d-flex justify-center mb-6">
               <div class="position-relative">
                 <v-avatar size="100" class="border">
@@ -328,7 +371,6 @@
                   class="position-absolute camera-btn elevation-2"
                   @click="$refs.fileInput.click()"
                 ></v-btn>
-                <!-- Hidden File Input -->
                 <input
                   type="file"
                   ref="fileInput"
@@ -339,44 +381,76 @@
               </div>
             </div>
 
-            <v-text-field
-              v-model="editForm.name"
-              label="Họ tên"
-              variant="outlined"
-              density="comfortable"
-              color="primary"
-              prepend-inner-icon="mdi-account"
-              class="mb-2"
-            ></v-text-field>
+            <!-- Edit form -->
+            <v-row dense>
+              <v-col cols="12">
+                <v-text-field
+                  v-model="editForm.name"
+                  label="Họ và tên"
+                  variant="outlined"
+                  density="comfortable"
+                  color="primary"
+                  prepend-inner-icon="mdi-account"
+                ></v-text-field>
+              </v-col>
 
-            <v-text-field
-              v-model="editForm.email"
-              label="Email"
-              variant="outlined"
-              density="comfortable"
-              color="primary"
-              prepend-inner-icon="mdi-email"
-              class="mb-2"
-            ></v-text-field>
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="editForm.phai"
+                  :items="['Nam', 'Nữ']"
+                  label="Giới tính"
+                  variant="outlined"
+                  density="comfortable"
+                  color="primary"
+                  prepend-inner-icon="mdi-gender-male-female"
+                ></v-select>
+              </v-col>
 
-            <v-text-field
-              v-model="editForm.phone"
-              label="Số điện thoại"
-              variant="outlined"
-              density="comfortable"
-              color="primary"
-              prepend-inner-icon="mdi-phone"
-              class="mb-2"
-            ></v-text-field>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="editForm.ngaysinh"
+                  label="Ngày sinh"
+                  type="date"
+                  variant="outlined"
+                  density="comfortable"
+                  color="primary"
+                  prepend-inner-icon="mdi-calendar"
+                ></v-text-field>
+              </v-col>
 
-            <v-text-field
-              v-model="editForm.address"
-              label="Địa chỉ"
-              variant="outlined"
-              density="comfortable"
-              color="primary"
-              prepend-inner-icon="mdi-map-marker"
-            ></v-text-field>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="editForm.phone"
+                  label="Số điện thoại"
+                  variant="outlined"
+                  density="comfortable"
+                  color="primary"
+                  prepend-inner-icon="mdi-phone"
+                ></v-text-field>
+              </v-col>
+
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="editForm.email"
+                  label="Email"
+                  variant="outlined"
+                  density="comfortable"
+                  color="primary"
+                  prepend-inner-icon="mdi-email"
+                ></v-text-field>
+              </v-col>
+
+              <v-col cols="12">
+                <v-text-field
+                  v-model="editForm.address"
+                  label="Địa chỉ"
+                  variant="outlined"
+                  density="comfortable"
+                  color="primary"
+                  prepend-inner-icon="mdi-map-marker"
+                ></v-text-field>
+              </v-col>
+            </v-row>
           </v-card-text>
 
           <v-card-actions class="pa-4 pt-0">
@@ -406,32 +480,31 @@ export default {
   name: "UserProfile",
   data() {
     return {
-      user: null,
-      borrowedBooks: [],
-      reviews: [],
-      editDialog: false,
+      user: null, // Thông tin user hiện tại
+      borrowedBooks: [], // Danh sách sách đã mượn
+      reviews: [], // Danh sách đánh giá của user
+      editDialog: false, // trạng thái dialog edit
       editForm: {
         name: "",
         email: "",
         phone: "",
         address: "",
+        phai: "",
+        ngaysinh: "",
         avatar: null,
       },
-      serverError: "",
-      deleteMessage: "",
-      defaultAvatar: "https://cdn-icons-png.flaticon.com/512/8345/8345328.png",
+      serverError: "", // Hiển thị lỗi server
+      deleteMessage: "", // Hiển thị message khi xóa review
+      defaultAvatar: "https://cdn-icons-png.flaticon.com/512/8345/8345328.png", // avatar default
     };
   },
   mounted() {
     this.fetchUserProfile();
-    // Logic fetch borrows và comments sẽ được kiểm tra bên trong
-    // nhưng để an toàn, ta có thể gọi luôn, vì API backend thường tự filter theo token người dùng
-    // hoặc xử lý ở phương thức fetch bên dưới.
     this.fetchUserBorrows();
     this.fetchUserComments();
   },
   methods: {
-    // ---- UI HELPER METHODS ----
+    /* ------------------ UI Helper ------------------ */
     getStatusColor(status) {
       switch (status) {
         case "pending":
@@ -457,21 +530,19 @@ export default {
       }
     },
 
-    // ---- LOGIC METHODS (GIỮ NGUYÊN) ----
+    /* ------------------ Logic ------------------ */
     async deleteReview(commentId) {
       if (!confirm("Bạn có chắc muốn xoá đánh giá này?")) return;
-
       try {
         await api.delete(`/api/comments/${commentId}`);
         this.reviews = this.reviews.filter((r) => r._id !== commentId);
         this.deleteMessage = "Đánh giá đã được xoá thành công";
-        setTimeout(() => {
-          this.deleteMessage = "";
-        }, 3000);
+        setTimeout(() => (this.deleteMessage = ""), 3000);
       } catch (error) {
         console.error("Lỗi khi xoá đánh giá:", error);
       }
     },
+
     async handleAvatarUpload(event) {
       const file = event.target.files[0];
       if (file) {
@@ -484,6 +555,7 @@ export default {
         }
       }
     },
+
     editProfile() {
       if (this.user) {
         this.editForm = {
@@ -491,39 +563,50 @@ export default {
           email: this.user.email,
           phone: this.user.so_dien_thoai,
           address: this.user.dia_chi,
+          phai: this.user.phai,
+          // Chuyển format date ISO về YYYY-MM-DD cho input date
+          ngaysinh: this.user.ngaysinh
+            ? new Date(this.user.ngaysinh).toISOString().split("T")[0]
+            : "",
           avatar: this.user.avatar || "",
         };
         this.editDialog = true;
       }
     },
+
     closeDialog() {
       this.editDialog = false;
       this.serverError = "";
     },
-    async saveProfile() {
-      try {
-        if (
-          !this.editForm.name ||
-          !this.editForm.email ||
-          !this.editForm.phone ||
-          !this.editForm.address
-        ) {
-          this.serverError = "❗ Vui lòng nhập đầy đủ thông tin";
-          return;
-        }
-        const payload = {
-          ho_ten: this.editForm.name,
-          email: this.editForm.email,
-          so_dien_thoai: this.editForm.phone,
-          dia_chi: this.editForm.address,
-          avatar: this.editForm.avatar || this.user.avatar,
-          vai_tro: this.user.vai_tro,
-        };
 
+    async saveProfile() {
+      if (
+        !this.editForm.name ||
+        !this.editForm.email ||
+        !this.editForm.phone ||
+        !this.editForm.address ||
+        !this.editForm.phai ||
+        !this.editForm.ngaysinh
+      ) {
+        this.serverError = "❗ Vui lòng nhập đầy đủ thông tin";
+        return;
+      }
+
+      const payload = {
+        ho_ten: this.editForm.name,
+        email: this.editForm.email,
+        so_dien_thoai: this.editForm.phone,
+        dia_chi: this.editForm.address,
+        phai: this.editForm.phai,
+        ngaysinh: this.editForm.ngaysinh,
+        avatar: this.editForm.avatar || this.user.avatar,
+        vai_tro: this.user.vai_tro,
+      };
+
+      try {
         const response = await api.put(`/api/users/${this.user._id}`, payload);
         this.user = response.data;
         this.editDialog = false;
-        // alert("✅ Cập nhật thông tin thành công!"); // Có thể bỏ alert này cho trải nghiệm mượt hơn
         this.serverError = "";
         await this.fetchUserProfile();
       } catch (error) {
@@ -532,6 +615,7 @@ export default {
           "❌ Cập nhật không thành công. Vui lòng thử lại.";
       }
     },
+
     async fetchUserProfile() {
       try {
         const response = await api.get("/api/users/profile");
@@ -541,11 +625,11 @@ export default {
         this.$router.push("/login");
       }
     },
+
     async fetchUserComments() {
       try {
         const user = JSON.parse(localStorage.getItem("user"));
-        const userId = user?.id; // Lưu ý: check lại key 'id' hay '_id' trong localStorage của bạn
-
+        const userId = user?.id; // Kiểm tra id trong localStorage
         if (!userId) return;
 
         const response = await api.get(`/api/comments/users/${userId}`);
@@ -560,10 +644,11 @@ export default {
         console.error("Lỗi khi tải đánh giá:", error);
       }
     },
+
     async fetchUserBorrows() {
       try {
         const user = JSON.parse(localStorage.getItem("user"));
-        const userId = user?.id; // Lưu ý: check lại key 'id' hay '_id'
+        const userId = user?.id;
         if (!userId) return;
 
         const response = await api.get(`/api/borrows/user/${userId}`);
@@ -572,6 +657,7 @@ export default {
         console.error("Lỗi khi tải thông tin mượn:", error);
       }
     },
+
     formatDate(date) {
       return date ? new Date(date).toLocaleDateString("vi-VN") : "---";
     },
@@ -580,27 +666,23 @@ export default {
 </script>
 
 <style scoped>
-/* 1. Tạo nền Gradient cho Cover Image */
 .profile-cover {
   height: 180px;
   background: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%);
   width: 100%;
 }
 
-/* 2. Style Avatar để đè lên Cover */
 .profile-avatar {
   border: 5px solid white;
   background-color: white;
 }
 
-/* 3. Nút camera trong dialog edit */
 .camera-btn {
   bottom: 0;
   right: 0;
   background-color: #212121 !important;
 }
 
-/* 4. Tùy chỉnh Table */
 .custom-table th {
   letter-spacing: 0.05em;
 }
