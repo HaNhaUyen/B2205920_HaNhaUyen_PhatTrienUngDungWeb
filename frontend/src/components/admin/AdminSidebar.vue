@@ -81,6 +81,11 @@ export default {
           to: "/admin/authors",
         },
         {
+          title: "Comment",
+          icon: "mdi-comment-text-multiple-outline",
+          to: "/admin/comments",
+        },
+        {
           title: "Theo dõi mượn sách",
           icon: "mdi-clipboard-text-clock-outline",
           to: "/admin/borrows",

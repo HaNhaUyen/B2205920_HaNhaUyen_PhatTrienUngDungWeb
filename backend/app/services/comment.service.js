@@ -134,13 +134,54 @@ class CommentService {
     return result.deletedCount;
   }
 
+  // Trong file services/comment.service.js
+
   async findAll() {
-    try {
-      return await this.Comment.find({}).toArray();
-    } catch (error) {
-      console.error("Error in findAll:", error);
-      throw error;
-    }
+    const pipeline = [
+      {
+        $addFields: {
+          userObjectId: { $toObjectId: "$ma_doc_gia" },
+          bookObjectId: { $toObjectId: "$ma_sach" },
+        },
+      },
+      // Nối với bảng người dùng để lấy tên
+      {
+        $lookup: {
+          from: "nguoidung",
+          localField: "userObjectId",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+
+      // Nối với bảng sách để lấy tên sách và ảnh bìa
+      {
+        $lookup: {
+          from: "sach",
+          localField: "bookObjectId",
+          foreignField: "_id",
+          as: "book",
+        },
+      },
+      { $unwind: "$book" },
+
+      // Chọn các trường cần thiết để trả về
+      {
+        $project: {
+          _id: 1,
+          noi_dung: 1,
+          ti_le: 1,
+          ngay_tao: 1,
+          "user.ho_ten": 1,
+          "user.email": 1,
+          "book.ten_sach": 1,
+          "book.anh_bia": 1,
+        },
+      },
+    ];
+
+    return await this.Comment.aggregate(pipeline).toArray();
   }
 }
 

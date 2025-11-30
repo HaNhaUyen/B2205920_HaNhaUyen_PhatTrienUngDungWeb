@@ -127,6 +127,11 @@ const routes = [
         name: "EditBorrow",
         component: () => import("@/components/admin/EditBorrow.vue"),
       },
+      {
+        path: "comments",
+        name: "Comments",
+        component: () => import("@/components/admin/CommentManager.vue"),
+      },
     ],
   },
 

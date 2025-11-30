@@ -6,13 +6,21 @@
     </h2>
 
     <v-card elevation="2" class="rounded-lg">
+      <!-- 
+        THAY ĐỔI 1: 
+        - :items="paginatedBooks" (Thay vì borrowedBooks)
+        - Thêm template v-slot:bottom để ẩn phân trang mặc định của bảng 
+      -->
       <v-data-table
         :headers="headers"
-        :items="borrowedBooks"
+        :items="paginatedBooks"
         :loading="loading"
         no-data-text="Bạn chưa mượn quyển sách nào"
         class="pa-2"
       >
+        <!-- Ẩn footer mặc định để dùng v-pagination bên ngoài -->
+        <template v-slot:bottom></template>
+
         <!-- Tùy chỉnh cột Tên sách -->
         <template v-slot:item.book_name="{ item }">
           <div class="d-flex align-center py-2">
@@ -32,14 +40,14 @@
           {{ formatDate(item.ngay_muon) }}
         </template>
 
-        <!-- Hạn trả: Sử dụng hàm tính toán giống Admin -->
+        <!-- Hạn trả -->
         <template v-slot:item.han_tra="{ item }">
           <span :class="isOverdue(item) ? 'text-red font-weight-bold' : ''">
             {{ formatDate(calculateDueDate(item)) }}
           </span>
         </template>
 
-        <!-- Cột Ngày trả thực -->
+        <!-- Ngày trả thực -->
         <template v-slot:item.ngay_tra="{ item }">
           <span
             v-if="item.ngay_tra_thuc_te || item.ngay_tra"
@@ -50,7 +58,7 @@
           <span v-else>---</span>
         </template>
 
-        <!-- Tiền phạt: Tính toán realtime giống Admin -->
+        <!-- Tiền phạt -->
         <template v-slot:item.tien_phat="{ item }">
           <span
             :class="{
@@ -62,6 +70,7 @@
           </span>
         </template>
 
+        <!-- Trạng thái -->
         <template v-slot:item.trang_thai="{ item }">
           <v-chip
             :color="getStatusColor(item.trang_thai)"
@@ -73,6 +82,7 @@
           </v-chip>
         </template>
 
+        <!-- Hành động -->
         <template v-slot:item.actions="{ item }">
           <v-btn
             v-if="item.trang_thai === 'pending'"
@@ -113,6 +123,18 @@
       </v-data-table>
     </v-card>
 
+    <!-- THAY ĐỔI 2: Thêm thanh phân trang bên ngoài -->
+    <v-row class="mt-4" v-if="totalPages > 0">
+      <v-col cols="12" class="flex justify-center">
+        <v-pagination
+          v-model="currentPage"
+          :length="totalPages"
+          :total-visible="7"
+          rounded
+        />
+      </v-col>
+    </v-row>
+
     <v-snackbar
       v-model="snackbar"
       :color="snackbarColor"
@@ -146,7 +168,22 @@ export default {
         { title: "Trạng thái", key: "trang_thai", align: "center" },
         { title: "Hành động", key: "actions", sortable: false, align: "end" },
       ],
+      // THAY ĐỔI 3: Thêm biến cho phân trang
+      currentPage: 1,
+      itemsPerPage: 5,
     };
+  },
+  computed: {
+    // THAY ĐỔI 4: Tính tổng số trang
+    totalPages() {
+      return Math.ceil(this.borrowedBooks.length / this.itemsPerPage);
+    },
+    // THAY ĐỔI 5: Cắt dữ liệu theo trang hiện tại
+    paginatedBooks() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      const end = start + this.itemsPerPage;
+      return this.borrowedBooks.slice(start, end);
+    },
   },
   created() {
     this.fetchBorrowedBooks();
@@ -178,6 +215,12 @@ export default {
         this.borrowedBooks = this.borrowedBooks.filter(
           (item) => item._id !== borrowId
         );
+
+        // Logic phụ: Nếu xóa hết item ở trang hiện tại thì lùi về trang trước
+        if (this.paginatedBooks.length === 0 && this.currentPage > 1) {
+          this.currentPage--;
+        }
+
         this.showSnackbar("Đã hủy yêu cầu mượn sách thành công", "success");
       } catch (error) {
         this.showSnackbar(
@@ -196,7 +239,6 @@ export default {
       try {
         const today = new Date().toISOString();
 
-        // Gửi cả 2 trường để đảm bảo backend nhận được và đồng bộ Admin
         const res = await api.put(`/api/borrows/${borrowId}/return`, {
           returnDate: today,
           ngay_tra_thuc_te: today,
@@ -206,14 +248,12 @@ export default {
           (item) => item._id === borrowId
         );
         if (index !== -1) {
-          // Cập nhật dữ liệu từ response của server để chính xác nhất
           this.borrowedBooks[index] = {
             ...this.borrowedBooks[index],
-            ...res.data, // Dữ liệu mới từ backend (đã cập nhật trạng thái, tiền phạt)
-            book: this.borrowedBooks[index].book, // Giữ lại thông tin book populate
+            ...res.data,
+            book: this.borrowedBooks[index].book,
           };
 
-          // Fallback nếu response không trả về đủ
           this.borrowedBooks[index].trang_thai = "returned";
           this.borrowedBooks[index].ngay_tra_thuc_te = today;
           this.borrowedBooks[index].ngay_tra = today;
@@ -230,8 +270,7 @@ export default {
       }
     },
 
-    // --- CÁC HÀM HELPER LOGIC GIỐNG ADMIN ---
-
+    // --- CÁC HÀM HELPER GIỮ NGUYÊN ---
     formatDate(date) {
       if (!date) return "";
       return new Date(date).toLocaleDateString("vi-VN");
@@ -242,8 +281,6 @@ export default {
         currency: "VND",
       }).format(value);
     },
-
-    // 1. Tính hạn trả (Nếu DB null thì +14 ngày)
     calculateDueDate(borrow) {
       if (borrow.han_tra) {
         return borrow.han_tra;
@@ -257,35 +294,24 @@ export default {
       }
       return null;
     },
-
-    // 2. Tính tiền phạt (Logic: 5000đ/ngày)
     calculateFine(borrow) {
-      // Nếu trạng thái là Pending, chưa tính phạt
       if (borrow.trang_thai === "pending") return 0;
-
-      // Lấy hạn trả chuẩn
       const dueDateStr = this.calculateDueDate(borrow);
       if (!dueDateStr) return 0;
-
       const dueDate = new Date(dueDateStr);
       let returnDate;
 
-      // Xác định ngày để so sánh
       if (borrow.trang_thai === "returned") {
-        // Nếu đã trả: dùng ngày trả thực tế
         const realReturnDate = borrow.ngay_tra_thuc_te || borrow.ngay_tra;
         if (!realReturnDate) return 0;
         returnDate = new Date(realReturnDate);
       } else {
-        // Nếu đang mượn: dùng ngày hiện tại
         returnDate = new Date();
       }
 
-      // Reset giờ phút giây để tính ngày chẵn
       dueDate.setHours(0, 0, 0, 0);
       returnDate.setHours(0, 0, 0, 0);
 
-      // Tính chênh lệch
       if (returnDate <= dueDate) return 0;
 
       const diffTime = returnDate - dueDate;
@@ -293,24 +319,16 @@ export default {
 
       return diffDays * 5000;
     },
-
-    // Kiểm tra quá hạn để tô đỏ
     isOverdue(item) {
-      // Nếu đã trả thì không coi là quá hạn (để hiển thị màu đen bình thường)
       if (item.trang_thai === "returned") return false;
-
       const dueDateStr = this.calculateDueDate(item);
       if (!dueDateStr) return false;
-
-      // So sánh ngày hiện tại với hạn trả
       const now = new Date();
       const dueDate = new Date(dueDateStr);
       now.setHours(0, 0, 0, 0);
       dueDate.setHours(0, 0, 0, 0);
-
       return now > dueDate;
     },
-
     getStatusColor(status) {
       switch (status) {
         case "pending":

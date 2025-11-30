@@ -19,6 +19,7 @@ const borrowRoutes = require("./app/routes/borrow.route");
 const userRouter = require("./app/routes/user.route");
 const reportRouter = require("./app/routes/repot.route");
 const commentRouter = require("./app/routes/comment.route");
+const dashboardRouter = require("./app/routes/dashboard.route");
 
 app.use("/api/users", userRouter);
 app.use("/api/books", bookRoutes);
@@ -27,7 +28,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/publishers", publisherRoutes);
 app.use("/api/borrows", borrowRoutes);
 app.use("/api/comments", commentRouter);
-app.use("/api/dashboard", reportRouter);
+app.use("/api/dashboard", dashboardRouter);
 
 app.use((req, res, next) => {
   return next(new ApiError(404, `Resource not found`));

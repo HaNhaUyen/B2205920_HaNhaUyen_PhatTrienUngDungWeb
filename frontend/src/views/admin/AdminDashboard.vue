@@ -257,7 +257,7 @@
         </v-card>
       </v-col>
 
-      <!-- Recent Books Table -->
+      <!-- Top Rated Books Table -->
       <v-col cols="12" md="6">
         <v-card
           class="fill-height rounded-xl elevation-3 border-thin d-flex flex-column"
@@ -265,9 +265,12 @@
         >
           <v-card-title class="pa-6 pb-2">
             <div class="d-flex align-center">
-              <v-icon color="green" class="mr-2">mdi-book-plus-outline</v-icon>
+              <!-- Icon Vương miện hoặc Sao -->
+              <v-icon color="amber-darken-2" class="mr-2"
+                >mdi-crown-outline</v-icon
+              >
               <span class="font-weight-bold text-h6 text-blue-grey-darken-3"
-                >Sách nhập gần đây</span
+                >Top sách đánh giá cao</span
               >
             </div>
           </v-card-title>
@@ -282,33 +285,79 @@
                     Tên sách
                   </th>
                   <th
-                    class="text-left font-weight-bold text-caption text-uppercase py-4"
+                    class="text-right font-weight-bold text-caption text-uppercase py-4 pr-6"
                   >
-                    Thông tin
+                    Đánh giá
                   </th>
                 </tr>
               </thead>
               <tbody>
                 <tr
-                  v-for="book in dashboardData.recentBooks"
-                  :key="book._id"
+                  v-for="(book, index) in dashboardData.topBooks"
+                  :key="index"
                   class="table-row-hover"
                 >
                   <td class="py-4 pl-6">
-                    <div
-                      class="font-weight-bold text-body-2 text-high-emphasis mb-1"
-                    >
-                      {{ book.ten_sach }}
-                    </div>
-                    <div class="text-caption text-medium-emphasis">
-                      <v-icon size="small" class="mr-1">mdi-feather</v-icon>
-                      {{ book.author.ho_ten }}
+                    <div class="d-flex align-center">
+                      <!-- Số thứ tự top -->
+                      <v-avatar
+                        size="24"
+                        :color="
+                          index === 0
+                            ? 'amber'
+                            : index === 1
+                            ? 'grey-lighten-1'
+                            : index === 2
+                            ? 'brown-lighten-2'
+                            : 'grey-lighten-3'
+                        "
+                        class="mr-3 text-caption font-weight-bold text-white elevation-1"
+                      >
+                        {{ index + 1 }}
+                      </v-avatar>
+                      <div>
+                        <div
+                          class="font-weight-bold text-body-2 text-high-emphasis mb-1 line-clamp-1"
+                        >
+                          {{ book.ten_sach }}
+                        </div>
+                        <div class="text-caption text-medium-emphasis">
+                          {{ book.ten_tac_gia }}
+                        </div>
+                      </div>
                     </div>
                   </td>
-                  <td class="py-4">
-                    <v-chip color="success" size="small" variant="tonal">
-                      {{ book.category.ten_the_loai }}
-                    </v-chip>
+                  <td class="py-4 pr-6 text-right">
+                    <div class="d-flex flex-column align-end">
+                      <div class="d-flex align-center">
+                        <span
+                          class="font-weight-bold mr-1 text-amber-darken-3"
+                          >{{ book.avgRating.toFixed(1) }}</span
+                        >
+                        <v-rating
+                          :model-value="book.avgRating"
+                          color="amber"
+                          density="compact"
+                          half-increments
+                          readonly
+                          size="x-small"
+                        ></v-rating>
+                      </div>
+                      <span class="text-caption text-grey">
+                        ({{ book.totalReviews }} lượt)
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+                <!-- Hiển thị khi chưa có đánh giá nào -->
+                <tr
+                  v-if="
+                    !dashboardData.topBooks ||
+                    dashboardData.topBooks.length === 0
+                  "
+                >
+                  <td colspan="2" class="text-center py-6 text-grey">
+                    Chưa có dữ liệu đánh giá
                   </td>
                 </tr>
               </tbody>
@@ -339,7 +388,7 @@ export default {
         totalBorrows: 0,
         totalFines: 0,
         recentUsers: [],
-        recentBooks: [],
+        topBooks: [], // <--- Sửa tên từ recentBooks thành topBooks
         borrowStatsLast7Days: [],
       },
       chartData: null,
