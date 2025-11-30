@@ -46,24 +46,32 @@
           <td>{{ borrow.docgia.ho_ten }}</td>
           <td>{{ borrow.sach.ten_sach }}</td>
           <td>{{ formatDate(borrow.ngay_muon) }}</td>
-          <td>{{ formatDate(borrow.han_tra) }}</td>
+
+          <!-- Hạn trả (Tự động tính +14 ngày nếu thiếu) -->
+          <td>{{ formatDate(calculateDueDate(borrow)) }}</td>
+
           <td>
             {{
               borrow.ngay_tra_thuc_te
                 ? formatDate(borrow.ngay_tra_thuc_te)
+                : borrow.ngay_tra
+                ? formatDate(borrow.ngay_tra)
                 : "---"
             }}
           </td>
+
+          <!-- Tiền phạt: Gọi hàm tính toán để hiển thị realtime -->
           <td>
             <span
               :class="{
-                'text-red-600 font-semibold': borrow.tien_phat > 0,
-                'text-gray-500': borrow.tien_phat === 0,
+                'text-red-600 font-bold': calculateFine(borrow) > 0,
+                'text-gray-500': calculateFine(borrow) === 0,
               }"
             >
-              {{ formatCurrency(borrow.tien_phat) }}
+              {{ formatCurrency(calculateFine(borrow)) }}
             </span>
           </td>
+
           <td class="text-center">
             <v-chip
               class="font-bold"
@@ -158,7 +166,7 @@ const messageType = ref("");
 
 // Phân trang mặc định
 const currentPage = ref(1);
-const itemsPerPage = ref(5); // cố định 5 bản ghi mỗi trang
+const itemsPerPage = ref(5);
 
 const fetchBorrows = async () => {
   try {
@@ -198,23 +206,79 @@ watch(search, () => {
   currentPage.value = 1;
 });
 
-// Hàm format
+// --- HELPER FUNCTIONS ---
+
 function formatCurrency(value) {
   if (!value) return "0 đ";
   return value.toLocaleString("vi-VN") + " đ";
 }
 
 function formatDate(dateStr) {
+  if (!dateStr) return "---";
   const d = new Date(dateStr);
   return d.toLocaleDateString("vi-VN");
 }
 
-// Xử lý trả sách
+// Tính hạn trả (Nếu null thì +14 ngày từ ngày mượn)
+function calculateDueDate(borrow) {
+  if (borrow.han_tra) {
+    return borrow.han_tra;
+  }
+  if (borrow.ngay_muon) {
+    const borrowDate = new Date(borrow.ngay_muon);
+    const dueDate = new Date(borrowDate.getTime() + 14 * 24 * 60 * 60 * 1000);
+    return dueDate.toISOString();
+  }
+  return null;
+}
+
+// Tính tiền phạt (Logic: 5000đ / ngày trễ)
+function calculateFine(borrow) {
+  // 1. Nếu trạng thái là Pending, chưa tính phạt
+  if (borrow.trang_thai === "pending") return 0;
+
+  // 2. Lấy hạn trả chuẩn
+  const dueDateStr = calculateDueDate(borrow);
+  if (!dueDateStr) return 0;
+
+  const dueDate = new Date(dueDateStr);
+  let returnDate;
+
+  // 3. Xác định ngày để so sánh
+  // Nếu đã trả (returned): dùng ngày trả thực tế
+  if (borrow.trang_thai === "returned") {
+    const realReturnDate = borrow.ngay_tra_thuc_te || borrow.ngay_tra;
+    if (!realReturnDate) return 0; // Đã trả mà ko có ngày -> coi như không phạt
+    returnDate = new Date(realReturnDate);
+  } else {
+    // Nếu đang mượn (borrowing): dùng ngày hiện tại để tính phạt dự kiến
+    returnDate = new Date();
+  }
+
+  // Reset giờ phút giây để tính ngày chẵn
+  dueDate.setHours(0, 0, 0, 0);
+  returnDate.setHours(0, 0, 0, 0);
+
+  // 4. Tính chênh lệch
+  if (returnDate <= dueDate) return 0;
+
+  const diffTime = returnDate - dueDate;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  return diffDays * 5000;
+}
+
+// --- ACTIONS ---
+
 async function handleReturn(borrowId) {
   try {
+    const today = new Date().toISOString();
+
     await api.put(`/api/borrows/${borrowId}/return`, {
-      returnDate: new Date().toISOString(),
+      returnDate: today,
+      ngay_tra_thuc_te: today,
     });
+
     message.value = "Trả sách thành công!";
     messageType.value = "success";
     await fetchBorrows();
@@ -225,7 +289,6 @@ async function handleReturn(borrowId) {
   }
 }
 
-// Xử lý duyệt mượn
 async function handleApprove(borrowId) {
   try {
     await api.put(`/api/borrows/${borrowId}/approve`, {
@@ -241,7 +304,6 @@ async function handleApprove(borrowId) {
   }
 }
 
-// Xóa bản ghi
 async function deleteBorrow(id) {
   if (!confirm("Bạn có chắc muốn xoá bản ghi này?")) return;
   try {

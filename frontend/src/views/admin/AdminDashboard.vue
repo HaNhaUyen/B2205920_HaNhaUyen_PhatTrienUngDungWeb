@@ -120,7 +120,7 @@
         </v-card>
       </v-col>
 
-      <!-- Card: Tổng tiền phạt -->
+      <!-- Card: Tổng tiền phạt (Đã đồng bộ logic) -->
       <v-col cols="12" sm="6" md="3">
         <v-card
           class="pa-4 rounded-xl elevation-3 card-hover border-thin"
@@ -134,7 +134,7 @@
                 TIỀN PHẠT
               </div>
               <div class="text-h3 font-weight-bold text-red-accent-4">
-                {{ (dashboardData.totalFines / 1000).toFixed(0) }}k
+                {{ dashboardData.totalFines.toLocaleString("vi-VN") }} đ
               </div>
             </div>
             <v-avatar color="red-lighten-5" size="60" class="rounded-lg">
@@ -143,13 +143,9 @@
           </div>
           <v-divider class="my-4"></v-divider>
           <div class="d-flex align-center">
-            <span class="text-h6 font-weight-bold text-red-darken-1 mr-1">
-              {{ dashboardData.totalFines.toLocaleString()
-              }}<span class="text-caption">đ</span>
+            <span class="text-caption text-medium-emphasis ml-auto">
+              Bao gồm cả phí dự kiến
             </span>
-            <span class="text-caption text-medium-emphasis ml-auto"
-              >Tổng thu</span
-            >
           </div>
         </v-card>
       </v-col>
@@ -353,15 +349,80 @@ export default {
     this.fetchDashboardData();
   },
   methods: {
+    // --- COPY LOGIC TÍNH TOÁN TỪ BorrowManager.vue ---
+
+    // 1. Tính hạn trả (Nếu DB thiếu thì +14 ngày)
+    calculateDueDate(borrow) {
+      if (borrow.han_tra) {
+        return borrow.han_tra;
+      }
+      if (borrow.ngay_muon) {
+        const borrowDate = new Date(borrow.ngay_muon);
+        const dueDate = new Date(
+          borrowDate.getTime() + 14 * 24 * 60 * 60 * 1000
+        );
+        return dueDate.toISOString();
+      }
+      return null;
+    },
+
+    // 2. Tính tiền phạt (5000đ/ngày)
+    calculateFine(borrow) {
+      if (borrow.trang_thai === "pending") return 0;
+
+      const dueDateStr = this.calculateDueDate(borrow);
+      if (!dueDateStr) return 0;
+
+      const dueDate = new Date(dueDateStr);
+      let returnDate;
+
+      // Xác định ngày so sánh
+      if (borrow.trang_thai === "returned") {
+        const realReturnDate = borrow.ngay_tra_thuc_te || borrow.ngay_tra;
+        if (!realReturnDate) return 0;
+        returnDate = new Date(realReturnDate);
+      } else {
+        // Đang mượn -> Tính đến hiện tại
+        returnDate = new Date();
+      }
+
+      dueDate.setHours(0, 0, 0, 0);
+      returnDate.setHours(0, 0, 0, 0);
+
+      if (returnDate <= dueDate) return 0;
+
+      const diffTime = returnDate - dueDate;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      return diffDays * 5000;
+    },
+    // ------------------------------------------------
+
     async fetchDashboardData() {
       try {
-        const response = await api.get("/api/dashboard/overview");
-        console.log(response);
+        // Gọi song song: Lấy tổng quan (cho số lượng) VÀ lấy danh sách phiếu mượn (để tính tiền)
+        const [overviewRes, borrowsRes] = await Promise.all([
+          api.get("/api/dashboard/overview"),
+          api.get("/api/borrows"), // API lấy tất cả phiếu mượn
+        ]);
 
-        this.dashboardData = response.data;
-        const stats = response.data.borrowStatsLast7Days;
+        this.dashboardData = overviewRes.data;
 
-        // Tạo danh sách 7 ngày gần nhất
+        // --- ĐỒNG BỘ TIỀN PHẠT ---
+        const allBorrows = borrowsRes.data;
+        let totalRealtimeFines = 0;
+
+        // Duyệt qua tất cả phiếu mượn để tính tổng tiền phạt theo logic realtime
+        allBorrows.forEach((borrow) => {
+          totalRealtimeFines += this.calculateFine(borrow);
+        });
+
+        // Ghi đè tổng tiền phạt hiển thị
+        this.dashboardData.totalFines = totalRealtimeFines;
+        // -------------------------
+
+        // --- XỬ LÝ BIỂU ĐỒ ---
+        const stats = overviewRes.data.borrowStatsLast7Days;
         const today = new Date();
         const last7Days = Array.from({ length: 7 }, (_, i) => {
           const date = new Date();
@@ -382,31 +443,26 @@ export default {
           return `${d}/${m}`;
         };
 
-        // Tạo map từ dữ liệu thống kê trả về
         const countMap = {};
         stats.forEach((item) => {
           countMap[item._id] = item.count;
         });
 
-        // Tạo dữ liệu biểu đồ đầy đủ 7 ngày
         const labels = last7Days.map(formatLabel);
         const data = last7Days.map((date) => {
           const key = formatDateKey(date);
           return countMap[key] || 0;
         });
 
-        // SETUP CHART ĐẸP HƠN
         this.chartData = {
           labels,
           datasets: [
             {
               label: "Sách mượn",
-              // Gradient fill effect handled by ChartJS plugins usually,
-              // but here using a clean blue with opacity
               backgroundColor: (ctx) => {
                 const canvas = ctx.chart.ctx;
                 const gradient = canvas.createLinearGradient(0, 0, 0, 400);
-                gradient.addColorStop(0, "rgba(59, 130, 246, 0.5)"); // Blue 500
+                gradient.addColorStop(0, "rgba(59, 130, 246, 0.5)");
                 gradient.addColorStop(1, "rgba(59, 130, 246, 0.0)");
                 return gradient;
               },
@@ -418,7 +474,7 @@ export default {
               pointHoverRadius: 6,
               data,
               fill: true,
-              tension: 0.4, // Smooth curves
+              tension: 0.4,
               borderWidth: 3,
             },
           ],
@@ -463,7 +519,6 @@ export default {
   color: #64748b !important;
 }
 
-/* Scrollbar tùy chỉnh cho bảng nếu cần */
 .v-table__wrapper::-webkit-scrollbar {
   width: 6px;
   height: 6px;

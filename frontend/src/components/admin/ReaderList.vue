@@ -136,7 +136,7 @@
             </Field>
             <Field name="gender" v-slot="{ field, errorMessage, handleBlur }">
               <v-select
-                :items="['Nam', 'Nữ', 'Khác']"
+                :items="['Nam', 'Nữ']"
                 v-bind="field"
                 @blur="handleBlur"
                 :error-messages="errorMessage"

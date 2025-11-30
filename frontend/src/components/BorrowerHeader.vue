@@ -36,6 +36,25 @@
           Sách
         </v-btn>
       </router-link>
+
+      <!-- SỬA LẠI ĐIỀU KIỆN Ở ĐÂY -->
+      <!-- Hiện nếu đã đăng nhập VÀ không phải là admin -->
+      <router-link
+        v-if="isLoggedIn && user.role !== 'admin'"
+        to="/borrowed-books"
+        custom
+        v-slot="{ href, navigate, isActive }"
+      >
+        <v-btn
+          :href="href"
+          @click="navigate"
+          :class="['nav-btn', { 'nav-btn-active': isActive }]"
+          variant="text"
+          rounded="lg"
+        >
+          Sách đã mượn
+        </v-btn>
+      </router-link>
     </div>
 
     <v-divider
@@ -95,6 +114,18 @@
             <v-list-item-title>Quản lí thư viện</v-list-item-title>
           </v-list-item>
 
+          <!-- Thêm vào Menu thả xuống cho tiện (Desktop) -->
+          <v-list-item
+            v-if="user.role !== 'admin'"
+            to="/borrowed-books"
+            active-color="primary"
+          >
+            <template v-slot:prepend>
+              <v-icon size="small" class="mr-2">mdi-book-clock-outline</v-icon>
+            </template>
+            <v-list-item-title>Sách đã mượn</v-list-item-title>
+          </v-list-item>
+
           <v-divider class="my-1" />
 
           <v-list-item @click="logout" class="text-error">
@@ -108,7 +139,7 @@
     </template>
 
     <template v-else>
-      <!-- Admin Login Button (Desktop) - Chỉ hiện khi chưa đăng nhập -->
+      <!-- Admin Login Button -->
       <div class="d-none d-md-flex mr-2">
         <v-tooltip text="Dành cho Quản trị viên" location="bottom">
           <template v-slot:activator="{ props }">
@@ -130,7 +161,7 @@
         </v-tooltip>
       </div>
 
-      <!-- User Login/Register (Desktop) -->
+      <!-- User Login/Register -->
       <div class="d-none d-md-flex">
         <router-link to="/login" custom v-slot="{ href, navigate }">
           <v-btn
@@ -201,6 +232,19 @@
         <v-list-item-title>Sách</v-list-item-title>
       </v-list-item>
 
+      <!-- SỬA LẠI ĐIỀU KIỆN MOBILE -->
+      <v-list-item
+        v-if="isLoggedIn && user.role !== 'admin'"
+        to="/borrowed-books"
+        link
+        active-color="primary"
+      >
+        <template v-slot:prepend
+          ><v-icon>mdi-book-clock-outline</v-icon></template
+        >
+        <v-list-item-title>Sách đã mượn</v-list-item-title>
+      </v-list-item>
+
       <v-divider class="my-3" />
 
       <template v-if="isLoggedIn">
@@ -248,7 +292,6 @@
 
         <v-divider class="my-2"></v-divider>
 
-        <!-- Link Admin Login Mobile -->
         <v-list-item to="/login-admin" link color="blue-grey">
           <template v-slot:prepend
             ><v-icon>mdi-shield-crown-outline</v-icon></template
@@ -272,16 +315,16 @@ export default {
   },
   computed: {
     isLoggedIn() {
-      // Kiểm tra token để xác định trạng thái đăng nhập
       return !!localStorage.getItem("token");
     },
   },
   created() {
     if (this.isLoggedIn) {
       const storedUser = localStorage.getItem("user");
-      // Safely parse JSON
       try {
         this.user = storedUser ? JSON.parse(storedUser) : {};
+        // Log ra để kiểm tra nếu cần
+        // console.log("User Info:", this.user);
       } catch (e) {
         this.user = {};
       }
@@ -291,10 +334,7 @@ export default {
     logout() {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      // Redirect về trang login thường sau khi logout
       this.$router.push("/login");
-      // Dùng setTimeout nhỏ để đảm bảo router push xong mới reload nếu cần,
-      // nhưng tốt nhất là reactive update. Ở đây giữ logic cũ reload window.
       window.location.reload();
     },
     goToProfile() {

@@ -8,6 +8,7 @@ import Register from "../views/Register.vue";
 import BookDetail from "../views/BookDetail.vue";
 import UserProfile from "../views/UserProfile.vue";
 import NotFound from "@/views/NotFound.vue";
+import BorrowedBooks from "../views/BorrowedBooks.vue";
 
 const routes = [
   {
@@ -44,6 +45,13 @@ const routes = [
     path: "/profile",
     name: "UserProfile",
     component: UserProfile,
+  },
+  {
+    path: "/borrowed-books",
+    name: "BorrowedBooks",
+    component: BorrowedBooks,
+    // Chỉ cần đăng nhập là được, không cần check role cụ thể
+    meta: { requiresAuth: true },
   },
 
   // ===========================
@@ -137,15 +145,20 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const user = JSON.parse(localStorage.getItem("user"));
 
+  // 1. Kiểm tra nếu route yêu cầu đăng nhập
   if (to.meta.requiresAuth) {
     if (!user) {
-      return next("/login"); // Chưa đăng nhập
+      return next("/login"); // Chưa có user -> về login
     }
 
-    const role = user.role;
+    // 2. Kiểm tra quyền (Role)
+    // CHỈ KIỂM TRA NẾU ROUTE ĐÓ CÓ YÊU CẦU ROLE CỤ THỂ
+    if (to.meta.roles && to.meta.roles.length > 0) {
+      const role = user.role || user.vai_tro; // Đề phòng tên trường khác nhau
 
-    if (!to.meta.roles.includes(role)) {
-      return next({ name: "NotFound" }); // Không có quyền
+      if (!to.meta.roles.includes(role)) {
+        return next({ name: "NotFound" }); // Không đúng quyền -> 404 hoặc 403
+      }
     }
   }
 

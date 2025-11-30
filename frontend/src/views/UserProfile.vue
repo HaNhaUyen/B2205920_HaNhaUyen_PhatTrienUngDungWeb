@@ -164,104 +164,6 @@
 
       <!-- 2. SECTION: LOGIC ẨN/HIỆN THEO ROLE -->
       <template v-if="user.vai_tro !== 'admin'">
-        <!-- 2a. Lịch sử mượn sách -->
-        <v-card class="rounded-xl elevation-2 mb-8 border-thin">
-          <v-card-title class="px-6 pt-6 pb-2 d-flex align-center">
-            <v-icon color="primary" class="mr-2">mdi-book-clock-outline</v-icon>
-            <span class="text-h6 font-weight-bold">Lịch sử mượn sách</span>
-          </v-card-title>
-
-          <v-card-text class="px-0">
-            <v-table v-if="borrowedBooks.length > 0" hover class="custom-table">
-              <thead>
-                <tr class="bg-grey-lighten-4">
-                  <th
-                    class="pl-6 text-left font-weight-bold text-uppercase text-caption text-grey-darken-2"
-                  >
-                    Sách
-                  </th>
-                  <th
-                    class="text-left font-weight-bold text-uppercase text-caption text-grey-darken-2"
-                  >
-                    Thông tin mượn
-                  </th>
-                  <th
-                    class="text-left font-weight-bold text-uppercase text-caption text-grey-darken-2"
-                  >
-                    Hạn trả
-                  </th>
-                  <th
-                    class="text-left font-weight-bold text-uppercase text-caption text-grey-darken-2"
-                  >
-                    Trạng thái
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="book in borrowedBooks" :key="book._id">
-                  <td class="pl-6 py-4">
-                    <div class="d-flex align-center">
-                      <v-avatar rounded="lg" size="60" class="mr-4 elevation-1">
-                        <v-img :src="book.book.anh_bia" cover></v-img>
-                      </v-avatar>
-                      <div>
-                        <div class="font-weight-bold text-body-2">
-                          {{ book.book.ten_sach }}
-                        </div>
-                        <div class="text-caption text-grey">
-                          SL: {{ book.so_luong || 1 }}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="py-4">
-                    <div class="text-caption">
-                      <span class="font-weight-medium">Mượn:</span>
-                      {{ formatDate(book.ngay_muon) }}
-                    </div>
-                    <div class="text-caption" v-if="book.ngay_tra">
-                      <span class="font-weight-medium">Đã trả:</span>
-                      {{ formatDate(book.ngay_tra) }}
-                    </div>
-                    <div
-                      v-if="book.tien_phat > 0"
-                      class="text-error font-weight-bold text-caption mt-1"
-                    >
-                      Phạt:
-                      {{
-                        new Intl.NumberFormat("vi-VN", {
-                          style: "currency",
-                          currency: "VND",
-                        }).format(book.tien_phat)
-                      }}
-                    </div>
-                  </td>
-                  <td class="py-4 font-weight-medium">
-                    {{ formatDate(book.han_tra) }}
-                  </td>
-                  <td class="py-4">
-                    <v-chip
-                      :color="getStatusColor(book.trang_thai)"
-                      variant="tonal"
-                      size="small"
-                      class="font-weight-bold"
-                    >
-                      {{ getStatusText(book.trang_thai) }}
-                    </v-chip>
-                  </td>
-                </tr>
-              </tbody>
-            </v-table>
-
-            <div v-else class="text-center py-8">
-              <v-icon size="60" color="grey-lighten-2" class="mb-3"
-                >mdi-book-open-blank-variant</v-icon
-              >
-              <p class="text-grey text-body-1">Bạn chưa mượn quyển sách nào.</p>
-            </div>
-          </v-card-text>
-        </v-card>
-
         <!-- 2b. Đánh giá đã viết -->
         <v-card class="rounded-xl elevation-2 border-thin">
           <v-card-title
@@ -468,6 +370,29 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
+
+      <!-- 4. THÊM SNACKBAR THÔNG BÁO THÀNH CÔNG -->
+      <v-snackbar
+        v-model="snackbar"
+        color="success"
+        timeout="3000"
+        location="top right"
+        variant="flat"
+        elevation="4"
+      >
+        <div class="d-flex align-center">
+          <v-icon start icon="mdi-check-circle" class="mr-2"></v-icon>
+          <span class="font-weight-medium">{{ snackbarMessage }}</span>
+        </div>
+        <template v-slot:actions>
+          <v-btn
+            color="white"
+            variant="text"
+            icon="mdi-close"
+            @click="snackbar = false"
+          ></v-btn>
+        </template>
+      </v-snackbar>
     </div>
   </v-container>
 </template>
@@ -481,7 +406,6 @@ export default {
   data() {
     return {
       user: null, // Thông tin user hiện tại
-      borrowedBooks: [], // Danh sách sách đã mượn
       reviews: [], // Danh sách đánh giá của user
       editDialog: false, // trạng thái dialog edit
       editForm: {
@@ -496,6 +420,10 @@ export default {
       serverError: "", // Hiển thị lỗi server
       deleteMessage: "", // Hiển thị message khi xóa review
       defaultAvatar: "https://cdn-icons-png.flaticon.com/512/8345/8345328.png", // avatar default
+
+      // --- Thêm biến cho snackbar ---
+      snackbar: false,
+      snackbarMessage: "",
     };
   },
   mounted() {
@@ -608,6 +536,11 @@ export default {
         this.user = response.data;
         this.editDialog = false;
         this.serverError = "";
+
+        // --- Hiển thị thông báo thành công ---
+        this.snackbarMessage = "Cập nhật hồ sơ thành công!";
+        this.snackbar = true;
+
         await this.fetchUserProfile();
       } catch (error) {
         this.serverError =
