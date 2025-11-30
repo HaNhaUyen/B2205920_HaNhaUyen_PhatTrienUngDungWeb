@@ -107,12 +107,19 @@ exports.delete = async (req, res, next) => {
   try {
     const borrowService = new BorrowService(MongoDB.client);
     const document = await borrowService.delete(req.params.id);
+
     if (!document) {
-      return next(new ApiError(404, "Không tìm thấy phiếu mượn để xoá"));
+      return next(new ApiError(404, "Không tìm thấy yêu cầu mượn sách"));
     }
-    return res.send({ message: "Xoá thành công" });
+
+    return res.send({ message: "Đã xóa thành công" });
   } catch (error) {
-    return next(new ApiError(500, "Lỗi khi xoá phiếu mượn"));
+    // QUAN TRỌNG: In lỗi ra terminal để biết tại sao sai
+    console.error("Lỗi DELETE Borrow:", error);
+
+    return next(
+      new ApiError(500, `Lỗi khi xóa yêu cầu mượn sách: ${error.message}`)
+    );
   }
 };
 

@@ -197,9 +197,8 @@ export default {
         const today = new Date().toISOString();
 
         // Gửi cả 2 trường để đảm bảo backend nhận được và đồng bộ Admin
-        await api.put(`/api/borrows/${borrowId}`, {
-          trang_thai: "returned",
-          ngay_tra: today,
+        const res = await api.put(`/api/borrows/${borrowId}/return`, {
+          returnDate: today,
           ngay_tra_thuc_te: today,
         });
 
@@ -207,9 +206,17 @@ export default {
           (item) => item._id === borrowId
         );
         if (index !== -1) {
+          // Cập nhật dữ liệu từ response của server để chính xác nhất
+          this.borrowedBooks[index] = {
+            ...this.borrowedBooks[index],
+            ...res.data, // Dữ liệu mới từ backend (đã cập nhật trạng thái, tiền phạt)
+            book: this.borrowedBooks[index].book, // Giữ lại thông tin book populate
+          };
+
+          // Fallback nếu response không trả về đủ
           this.borrowedBooks[index].trang_thai = "returned";
-          this.borrowedBooks[index].ngay_tra = today;
           this.borrowedBooks[index].ngay_tra_thuc_te = today;
+          this.borrowedBooks[index].ngay_tra = today;
         }
 
         this.showSnackbar("Đã trả sách thành công!", "success");

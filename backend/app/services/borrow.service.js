@@ -11,11 +11,11 @@ class BorrowService {
       ma_doc_gia: payload.ma_doc_gia,
       ma_sach: payload.ma_sach,
       ngay_muon: payload.ngay_muon || new Date(),
-      han_tra: payload.han_tra, // hạn trả
-      ngay_tra_thuc_te: payload.ngay_tra_thuc_te || null, // ngày trả thực tế
-      tien_phat: payload.tien_phat || 0, // tiền phạt (nếu có)
+      han_tra: payload.han_tra,
+      ngay_tra_thuc_te: payload.ngay_tra_thuc_te || null,
+      tien_phat: payload.tien_phat || 0,
       trang_thai: payload.trang_thai || "pending",
-      so_luong: payload.so_luong || 1, // hoặc "returned"
+      so_luong: parseInt(payload.so_luong) || 1,
     };
 
     Object.keys(borrow).forEach(
@@ -24,18 +24,24 @@ class BorrowService {
     return borrow;
   }
 
+  // ✅ HÀM MỚI: Tăng lại số lượng sách
+  async restoreBookQuantity(bookId, qty) {
+    // Ép kiểu qty thành số nguyên, nếu lỗi thì mặc định là 1
+    const quantityNumber = parseInt(qty) || 1;
+
+    return await this.Book.updateOne(
+      { _id: new ObjectId(bookId) },
+      { $inc: { so_luong: quantityNumber } } // Truyền số đã ép kiểu vào đây
+    );
+  }
+
   async create(payload) {
     const borrow = this.extractBorrowData(payload);
 
-    // Bước 1: Lấy thông tin sách từ collection
     const book = await this.Book.findOne({ _id: new ObjectId(borrow.ma_sach) });
+    if (!book) throw new Error("Không tìm thấy sách");
 
-    if (!book) {
-      throw new Error("Không tìm thấy sách");
-    }
-
-    // Bước 2: Kiểm tra quantity yêu cầu
-    const requestedQuantity = borrow.so_luong || 1; // Giả sử người mượn nhập vào trường so_luong
+    const requestedQuantity = borrow.so_luong || 1;
 
     if (book.so_luong < requestedQuantity) {
       throw new Error(
@@ -43,10 +49,9 @@ class BorrowService {
       );
     }
 
-    // Bước 3: Tạo phiếu mượn
     const result = await this.Borrow.insertOne(borrow);
 
-    // Bước 4: Trừ số lượng sách
+    // Trừ số lượng sách khi tạo phiếu mượn
     await this.Book.updateOne(
       { _id: book._id },
       { $inc: { so_luong: -requestedQuantity } }
@@ -71,7 +76,7 @@ class BorrowService {
           as: "book",
         },
       },
-      { $unwind: "$book" }, // nếu chỉ lấy 1
+      { $unwind: "$book" },
       {
         $project: {
           _id: 1,
@@ -83,7 +88,7 @@ class BorrowService {
           ngay_tra_thuc_te: 1,
           trang_thai: 1,
           tien_phat: 1,
-          book: 1, // dữ liệu từ books
+          book: 1,
         },
       },
     ];
@@ -101,15 +106,12 @@ class BorrowService {
   async findWithDetails(filter = {}) {
     const pipeline = [
       { $match: filter },
-
-      // Convert string ID to ObjectId
       {
         $addFields: {
           userId: { $toObjectId: "$ma_doc_gia" },
           bookId: { $toObjectId: "$ma_sach" },
         },
       },
-
       {
         $lookup: {
           from: "nguoidung",
@@ -119,7 +121,6 @@ class BorrowService {
         },
       },
       { $unwind: "$docgia" },
-
       {
         $lookup: {
           from: "sach",
@@ -129,13 +130,13 @@ class BorrowService {
         },
       },
       { $unwind: "$sach" },
-
       {
         $project: {
           _id: 1,
           ngay_muon: 1,
           han_tra: 1,
           ngay_tra_thuc_te: 1,
+          so_luong: 1,
           tien_phat: 1,
           trang_thai: 1,
           "docgia._id": 1,
@@ -147,18 +148,18 @@ class BorrowService {
       },
     ];
 
-    try {
-      return await this.Borrow.aggregate(pipeline).toArray();
-    } catch (error) {
-      console.error("Error in findWithDetails:", error);
-      throw error;
-    }
+    return await this.Borrow.aggregate(pipeline).toArray();
   }
 
-  // Hàm cập nhật trả sách và tính tiền phạt nếu có
+  // ✅ CẬP NHẬT: Xử lý trả sách và cộng lại kho
   async returnBook(id, ngay_tra_thuc_te = new Date()) {
     const borrow = await this.findById(id);
     if (!borrow) return null;
+
+    // Nếu đã trả rồi thì không xử lý nữa để tránh cộng dồn kho sai
+    if (borrow.trang_thai === "returned") {
+      return borrow;
+    }
 
     const due = new Date(borrow.han_tra);
     const returned = new Date(ngay_tra_thuc_te);
@@ -166,9 +167,10 @@ class BorrowService {
     let fine = 0;
     if (returned > due) {
       const lateDays = Math.ceil((returned - due) / (1000 * 60 * 60 * 24));
-      fine = lateDays * 1000; // 1000 VNĐ / ngày trễ
+      fine = lateDays * 1000; // Ví dụ phạt 1000đ, hoặc logic 5000đ tùy bạn
     }
 
+    // Cập nhật trạng thái phiếu mượn
     const result = await this.Borrow.findOneAndUpdate(
       { _id: new ObjectId(id) },
       {
@@ -181,6 +183,9 @@ class BorrowService {
       { returnDocument: "after" }
     );
 
+    // ✅ Tăng lại số lượng sách trong kho
+    await this.restoreBookQuantity(borrow.ma_sach, borrow.so_luong || 1);
+
     return result;
   }
 
@@ -188,19 +193,32 @@ class BorrowService {
     const filter = {
       _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
     };
-    const result = await this.Borrow.findOneAndUpdate(
+    return await this.Borrow.findOneAndUpdate(
       filter,
       { $set: payload },
       { returnDocument: "after" }
     );
-    return result;
   }
 
+  // ✅ CẬP NHẬT: Xử lý khi xóa (Hủy mượn) thì cộng lại kho
   async delete(id) {
-    const result = await this.Borrow.findOneAndDelete({
-      _id: ObjectId.isValid(id) ? new ObjectId(id) : null,
+    if (!ObjectId.isValid(id)) {
+      return null;
+    }
+
+    const borrow = await this.Borrow.findOne({ _id: new ObjectId(id) });
+    if (!borrow) return null;
+
+    if (borrow.trang_thai === "pending" || borrow.trang_thai === "borrowing") {
+      // ✅ Ép kiểu ở đây cho chắc chắn trước khi truyền đi
+      const qtyToRestore = parseInt(borrow.so_luong) || 1;
+
+      await this.restoreBookQuantity(borrow.ma_sach, qtyToRestore);
+    }
+
+    return await this.Borrow.findOneAndDelete({
+      _id: new ObjectId(id),
     });
-    return result;
   }
 
   async deleteAll() {
@@ -209,12 +227,7 @@ class BorrowService {
   }
 
   async findAll() {
-    try {
-      return await this.Borrow.find({}).toArray();
-    } catch (error) {
-      console.error("Error in findAll:", error);
-      throw error;
-    }
+    return await this.Borrow.find({}).toArray();
   }
 }
 

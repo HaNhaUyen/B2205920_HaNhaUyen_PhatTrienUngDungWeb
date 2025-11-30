@@ -34,6 +34,7 @@
           <th>Ngày mượn</th>
           <th>Hạn trả</th>
           <th>Ngày trả thực</th>
+          <th>Số lượng</th>
           <th>Tiền phạt</th>
           <th class="text-center">Trạng thái</th>
           <th>Duyệt/ Trả</th>
@@ -59,7 +60,7 @@
                 : "---"
             }}
           </td>
-
+          <td>{{ borrow.so_luong ?? 1 }}</td>
           <!-- Tiền phạt: Gọi hàm tính toán để hiển thị realtime -->
           <td>
             <span

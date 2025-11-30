@@ -36,7 +36,7 @@
           {{ message }}
         </span>
 
-        <!-- Form: Thêm v-slot="{ setFieldValue }" để có thể cập nhật chéo các trường -->
+        <!-- Form -->
         <Form
           v-if="initialValues"
           :key="formKey"
@@ -90,7 +90,27 @@
 
             <v-col cols="12"><v-divider class="my-2"></v-divider></v-col>
 
-            <!-- 3. Ngày mượn (Đã sửa logic cập nhật) -->
+            <!-- ✅ 3. Số lượng (Hiển thị số lượng hiện tại) -->
+            <v-col cols="12" md="4">
+              <Field name="quantity" v-slot="{ field, errors }">
+                <v-text-field
+                  v-bind="field"
+                  :model-value="field.value"
+                  @update:model-value="field.handleChange"
+                  label="Số lượng"
+                  type="number"
+                  min="1"
+                  prepend-inner-icon="mdi-numeric"
+                  variant="outlined"
+                  density="comfortable"
+                  color="black"
+                  :error-messages="errors"
+                  class="mb-1"
+                />
+              </Field>
+            </v-col>
+
+            <!-- 4. Ngày mượn -->
             <v-col cols="12" md="4">
               <Field name="borrowDate" v-slot="{ field, errors }">
                 <v-text-field
@@ -98,11 +118,8 @@
                   :model-value="field.value"
                   @update:model-value="
                     (val) => {
-                      field.handleChange(val); // Cập nhật ngày mượn
-
-                      // Tính ngày trả dự kiến = ngày mượn + 14
+                      field.handleChange(val);
                       const newDueDate = calculateDueDate(val);
-                      // Cập nhật trường dueDate
                       setFieldValue('dueDate', newDueDate);
                     }
                   "
@@ -118,7 +135,7 @@
               </Field>
             </v-col>
 
-            <!-- 4. Hạn trả -->
+            <!-- 5. Hạn trả -->
             <v-col cols="12" md="4">
               <Field name="dueDate" v-slot="{ field, errors }">
                 <v-text-field
@@ -137,7 +154,7 @@
               </Field>
             </v-col>
 
-            <!-- 5. Ngày trả thực tế -->
+            <!-- 6. Ngày trả thực tế -->
             <v-col cols="12" md="4">
               <Field name="returnDate" v-slot="{ field, errors }">
                 <v-text-field
@@ -157,8 +174,8 @@
               </Field>
             </v-col>
 
-            <!-- 6. Tiền phạt -->
-            <v-col cols="12" md="6">
+            <!-- 7. Tiền phạt -->
+            <v-col cols="12" md="4">
               <Field name="fine" v-slot="{ field, errors }">
                 <v-text-field
                   v-bind="field"
@@ -176,8 +193,8 @@
               </Field>
             </v-col>
 
-            <!-- 7. Trạng thái -->
-            <v-col cols="12" md="6">
+            <!-- 8. Trạng thái -->
+            <v-col cols="12" md="4">
               <Field name="status" v-slot="{ field, errors }">
                 <v-select
                   v-bind="field"
@@ -264,6 +281,12 @@ export default {
       schema: yup.object({
         userId: yup.string().required("Vui lòng chọn độc giả"),
         bookId: yup.string().required("Vui lòng chọn sách"),
+        // Validate số lượng
+        quantity: yup
+          .number()
+          .typeError("Số lượng phải là số")
+          .required("Nhập số lượng")
+          .min(1, "Ít nhất 1 quyển"),
         borrowDate: yup.string().required("Chọn ngày mượn"),
         dueDate: yup.string().nullable(),
         returnDate: yup.string().nullable(),
@@ -307,6 +330,11 @@ export default {
         this.initialValues = {
           userId: borrow.ma_doc_gia,
           bookId: borrow.ma_sach,
+
+          // ✅ QUAN TRỌNG: Thêm parseInt để đảm bảo hiển thị đúng số lượng hiện tại
+          // Kể cả khi DB lưu dạng chuỗi "2", nó sẽ hiện số 2 lên ô input
+          quantity: parseInt(borrow.so_luong) || 1,
+
           borrowDate: borrowDateStr,
           dueDate: dueDateStr,
           returnDate: borrow.ngay_tra_thuc_te
@@ -347,6 +375,8 @@ export default {
         const payload = {
           ma_doc_gia: values.userId,
           ma_sach: values.bookId,
+          // Ép kiểu số lượng về integer để tránh lỗi backend
+          so_luong: parseInt(values.quantity),
           ngay_muon: values.borrowDate,
           han_tra: values.dueDate,
           tien_phat: values.fine,
