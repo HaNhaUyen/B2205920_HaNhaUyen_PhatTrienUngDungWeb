@@ -1,27 +1,54 @@
 <template>
   <div class="p-6 bg-white rounded-xl shadow space-y-6">
+    <!-- Header -->
     <div class="flex justify-between items-center">
-      <h2 class="text-2xl font-bold">Quản lý Sách</h2>
+      <div>
+        <h2 class="text-2xl font-bold">Quản lý Sách</h2>
+      </div>
       <v-btn color="primary" @click="openDialog()">Thêm Sách</v-btn>
     </div>
 
-    <span
-      v-if="message"
-      :class="{
-        'text-green-600': messageType === 'success',
-        'text-red-600': messageType === 'error',
-        'block text-center mb-4 font-medium': true,
-      }"
+    <!-- Thông báo lỗi/thành công -->
+    <v-fade-transition>
+      <span
+        v-if="message"
+        :class="{
+          'text-green-600': messageType === 'success',
+          'text-red-600': messageType === 'error',
+          'block text-center mb-4 font-medium': true,
+        }"
+      >
+        {{ message }}
+      </span>
+    </v-fade-transition>
+
+    <!-- Toolbar: Tìm kiếm + Tổng số lượng (Giữ nguyên chức năng mới thêm) -->
+    <div
+      class="flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50 p-4 rounded-lg border"
     >
-      {{ message }}
-    </span>
+      <v-text-field
+        v-model="search"
+        label="Tìm kiếm Sách"
+        prepend-inner-icon="mdi-magnify"
+        density="compact"
+        variant="outlined"
+        hide-details
+        bg-color="white"
+        class="w-full md:w-1/2"
+        clearable
+      />
 
-    <v-text-field
-      v-model="search"
-      label="Tìm kiếm Sách"
-      prepend-inner-icon="mdi-magnify"
-    />
+      <div class="flex gap-2">
+        <v-chip color="primary" variant="flat" class="font-weight-bold">
+          Tổng: {{ filteredBooks.length }} đầu sách
+        </v-chip>
+        <v-chip color="teal" variant="tonal" class="font-weight-bold">
+          Kho: {{ totalStock }} cuốn
+        </v-chip>
+      </div>
+    </div>
 
+    <!-- Bảng dữ liệu (Giao diện cũ) -->
     <v-table>
       <thead>
         <tr>
@@ -30,7 +57,6 @@
           <th>Tên sách</th>
           <th>Tác giả</th>
           <th>Thể loại</th>
-
           <th>Nhà xuất bản</th>
           <th>Năm xuất bản</th>
           <th>Số lượng</th>
@@ -39,10 +65,8 @@
         </tr>
       </thead>
       <tbody>
-        <!-- <tr v-for="(book, index) in filteredBooks" :key="book._id"> -->
         <tr v-for="(book, index) in paginatedBooks" :key="book._id">
           <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-          <!-- <td>{{ index + 1 }}</td> -->
           <td>
             <img
               :src="book.anh_bia"
@@ -53,11 +77,10 @@
           <td>{{ book.ten_sach }}</td>
           <td>{{ book.ten_tac_gia }}</td>
           <td>{{ book.ten_the_loai }}</td>
-
           <td>{{ book.ten_nxb }}</td>
           <td>{{ book.nam_xuat_ban }}</td>
           <td>{{ book.so_luong }}</td>
-          <td class="">
+          <td>
             <div class="tooltip-container">
               <div class="truncate-multi-line">
                 {{ book.mo_ta }}
@@ -69,7 +92,7 @@
             <v-btn
               icon
               color="blue"
-              class="my-1"
+              class="my-1 mr-1"
               @click="$router.push(`/admin/books/edit/${book._id}`)"
             >
               <v-icon>mdi-pencil</v-icon>
@@ -79,29 +102,36 @@
             </v-btn>
           </td>
         </tr>
+        <tr v-if="paginatedBooks.length === 0">
+          <td colspan="10" class="text-center py-6 text-gray-500">
+            Không tìm thấy sách nào.
+          </td>
+        </tr>
       </tbody>
     </v-table>
+
+    <!-- Phân trang -->
     <div class="flex justify-between items-center mt-4">
       <span>Trang {{ currentPage }} / {{ totalPages }}</span>
-      <div class="space-x-2">
-        <v-btn size="small" :disabled="currentPage === 1" @click="currentPage--"
-          >Trước</v-btn
-        >
-        <v-btn
-          size="small"
-          :disabled="currentPage === totalPages"
-          @click="currentPage++"
-          >Sau</v-btn
-        >
-      </div>
+      <v-pagination
+        v-model="currentPage"
+        :length="totalPages"
+        :total-visible="5"
+        density="compact"
+        rounded="circle"
+      ></v-pagination>
     </div>
+
     <!-- Dialog Thêm/Sửa -->
     <v-dialog v-model="dialog" max-width="500px">
       <v-card>
         <v-card-title class="text-h5 grey lighten-2">
           {{ "Thêm Sách" }}
         </v-card-title>
-        <v-card-text class="overflow-auto no-scrollbar">
+        <v-card-text
+          class="overflow-auto no-scrollbar"
+          style="max-height: 70vh"
+        >
           <Form @submit="saveBook" :validation-schema="bookSchema">
             <Field name="title" v-slot="{ field, errorMessage }">
               <v-text-field
@@ -192,12 +222,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { Form, Field } from "vee-validate";
 import * as yup from "yup";
 import api from "@/services/api.service";
+
 const currentPage = ref(1);
 const itemsPerPage = ref(5);
+
 // Data
 const books = ref([]);
 const dialog = ref(false);
@@ -207,6 +239,7 @@ const messageType = ref("");
 const authors = ref([]);
 const categories = ref([]);
 const publishers = ref([]);
+
 // Schema xác thực
 const bookSchema = yup.object({
   title: yup.string().required("Vui lòng nhập tên sách"),
@@ -231,6 +264,15 @@ const filteredBooks = computed(() =>
       b.ten_nxb.toLowerCase().includes(search.value.toLowerCase())
   )
 );
+
+// Tính tổng tồn kho (Cộng dồn số lượng)
+const totalStock = computed(() => {
+  return filteredBooks.value.reduce(
+    (sum, book) => sum + (Number(book.so_luong) || 0),
+    0
+  );
+});
+
 const totalPages = computed(() =>
   Math.ceil(filteredBooks.value.length / itemsPerPage.value)
 );
@@ -240,6 +282,7 @@ const paginatedBooks = computed(() => {
   const end = start + itemsPerPage.value;
   return filteredBooks.value.slice(start, end);
 });
+
 async function fetchAuthors() {
   const res = await api.get("/api/authors");
   authors.value = res.data;
@@ -254,6 +297,7 @@ async function fetchPublishers() {
   const res = await api.get("/api/publishers");
   publishers.value = res.data;
 }
+
 // Lấy danh sách sách từ API
 async function fetchBooks() {
   try {
@@ -279,8 +323,6 @@ function closeDialog() {
 
 // Lưu sách (thêm hoặc cập nhật)
 async function saveBook(values) {
-  console.log(values);
-
   try {
     const payload = {
       ma_tac_gia: values.authorId,
@@ -294,8 +336,8 @@ async function saveBook(values) {
     };
     await api.post("/api/books", payload);
     message.value = "Thêm sách thành công!";
-
     messageType.value = "success";
+
     await fetchBooks();
     closeDialog();
   } catch (err) {
@@ -319,10 +361,11 @@ async function deleteBook(id) {
     }
   }
 }
-import { watch } from "vue";
+
 watch(search, () => {
   currentPage.value = 1;
 });
+
 onMounted(() => {
   fetchBooks();
   fetchAuthors();
@@ -330,6 +373,7 @@ onMounted(() => {
   fetchPublishers();
 });
 </script>
+
 <style scoped>
 .truncate-multi-line {
   display: -webkit-box;
@@ -340,8 +384,7 @@ onMounted(() => {
   white-space: normal;
   max-width: 300px;
   line-height: 1.4em;
-  max-height: 4.2em;
-  /* 3 dòng x line-height */
+  max-height: 4.2em; /* 3 dòng x line-height */
 }
 
 .tooltip-container {
@@ -357,9 +400,8 @@ onMounted(() => {
   padding: 5px;
   border-radius: 4px;
   position: absolute;
-  z-index: 1;
+  z-index: 1000; /* Tăng z-index để tooltip đè lên các phần tử khác */
   bottom: 100%;
-  /* phía trên */
   left: 0;
   width: max-content;
   max-width: 300px;

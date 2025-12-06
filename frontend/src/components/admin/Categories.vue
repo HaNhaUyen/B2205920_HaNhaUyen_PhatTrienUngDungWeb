@@ -1,10 +1,12 @@
 <template>
   <div class="p-6 bg-white rounded-xl shadow space-y-6">
+    <!-- Header -->
     <div class="flex justify-between items-center">
       <h2 class="text-2xl font-bold">Quản lý Thể loại</h2>
       <v-btn color="primary" @click="openDialog()">Thêm thể loại</v-btn>
     </div>
 
+    <!-- Thông báo -->
     <span
       v-if="message"
       :class="{
@@ -16,13 +18,32 @@
       {{ message }}
     </span>
 
-    <v-text-field
-      v-model="search"
-      label="Tìm kiếm thể loại"
-      prepend-inner-icon="mdi-magnify"
-      clearable
-    />
+    <!-- Toolbar: Tìm kiếm + Tổng số lượng (GIAO DIỆN MỚI GIỐNG HÌNH) -->
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+      <!-- Ô tìm kiếm (bên trái) -->
+      <div class="w-full sm:w-96">
+        <v-text-field
+          v-model="search"
+          placeholder="Tìm kiếm thể loại..."
+          prepend-inner-icon="mdi-magnify"
+          density="compact"
+          variant="outlined"
+          hide-details
+          rounded="lg"
+          bg-color="white"
+          clearable
+        />
+      </div>
 
+      <!-- Chip hiển thị tổng số (bên phải - style nút xanh) -->
+      <div
+        class="bg-blue-600 text-white px-6 py-2 rounded-full font-bold text-sm shadow-sm whitespace-nowrap"
+      >
+        Tổng: {{ filteredCategories.length }} thể loại
+      </div>
+    </div>
+
+    <!-- Bảng dữ liệu -->
     <v-table>
       <thead>
         <tr>

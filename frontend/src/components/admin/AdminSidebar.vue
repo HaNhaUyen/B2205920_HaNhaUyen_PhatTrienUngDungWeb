@@ -81,7 +81,7 @@ export default {
           to: "/admin/authors",
         },
         {
-          title: "Comment",
+          title: "Đánh giá",
           icon: "mdi-comment-text-multiple-outline",
           to: "/admin/comments",
         },

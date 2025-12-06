@@ -16,13 +16,30 @@
       {{ message }}
     </span>
 
-    <!-- Search -->
-    <v-text-field
-      v-model="search"
-      label="Tìm kiếm theo độc giả hoặc tên sách"
-      prepend-inner-icon="mdi-magnify"
-      clearable
-    />
+    <!-- Toolbar: Tìm kiếm + Tổng số lượng (GIAO DIỆN MỚI) -->
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+      <!-- Ô tìm kiếm (bên trái) -->
+      <div class="w-full sm:w-96">
+        <v-text-field
+          v-model="search"
+          placeholder="Tìm kiếm theo độc giả hoặc tên sách..."
+          prepend-inner-icon="mdi-magnify"
+          density="compact"
+          variant="outlined"
+          hide-details
+          rounded="lg"
+          bg-color="white"
+          clearable
+        />
+      </div>
+
+      <!-- Chip hiển thị tổng số (bên phải - style nút xanh) -->
+      <div
+        class="bg-blue-600 text-white px-6 py-2 rounded-full font-bold text-sm shadow-sm whitespace-nowrap"
+      >
+        Tổng: {{ filteredBorrows.length }} phiếu mượn
+      </div>
+    </div>
 
     <!-- Table -->
     <v-table>

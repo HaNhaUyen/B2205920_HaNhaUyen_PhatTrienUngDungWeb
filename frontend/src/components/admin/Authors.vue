@@ -6,13 +6,42 @@
       <v-btn color="primary" @click="openDialog()">Thêm tác giả</v-btn>
     </div>
 
-    <!-- Search -->
-    <v-text-field
-      v-model="search"
-      label="Tìm kiếm tên tác giả"
-      prepend-inner-icon="mdi-magnify"
-      @input="currentPage = 1"
-    />
+    <!-- Thông báo (Mới thêm) -->
+    <span
+      v-if="message"
+      :class="{
+        'text-green-600': messageType === 'success',
+        'text-red-600': messageType === 'error',
+        'block text-center mb-4 font-medium': true,
+      }"
+    >
+      {{ message }}
+    </span>
+
+    <!-- Toolbar: Tìm kiếm + Tổng số lượng (GIAO DIỆN MỚI) -->
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+      <!-- Ô tìm kiếm (bên trái) -->
+      <div class="w-full sm:w-96">
+        <v-text-field
+          v-model="search"
+          placeholder="Tìm kiếm tên tác giả..."
+          prepend-inner-icon="mdi-magnify"
+          density="compact"
+          variant="outlined"
+          hide-details
+          rounded="lg"
+          bg-color="white"
+          clearable
+        />
+      </div>
+
+      <!-- Chip hiển thị tổng số (bên phải - style nút xanh) -->
+      <div
+        class="bg-blue-600 text-white px-6 py-2 rounded-full font-bold text-sm shadow-sm whitespace-nowrap"
+      >
+        Tổng: {{ filteredAuthors.length }} tác giả
+      </div>
+    </div>
 
     <!-- Table -->
     <v-table>
@@ -116,7 +145,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { Field, Form } from "vee-validate";
 import * as yup from "yup";
 import api from "@/services/api.service";
@@ -125,6 +154,10 @@ const dialog = ref(false);
 const search = ref("");
 const itemsPerPage = ref(5);
 const currentPage = ref(1);
+
+// State thông báo
+const message = ref("");
+const messageType = ref("");
 
 // Yup validation schema
 const authorSchema = yup.object({
@@ -153,6 +186,11 @@ const paginatedAuthors = computed(() => {
   return filteredAuthors.value.slice(start, end);
 });
 
+// Reset trang về 1 khi tìm kiếm (tương tự bên thể loại)
+watch(search, () => {
+  currentPage.value = 1;
+});
+
 // Mở / đóng dialog
 function openDialog() {
   dialog.value = true;
@@ -161,7 +199,7 @@ function closeDialog() {
   dialog.value = false;
 }
 
-// Thêm tác giả với lỗi hiển thị trên field ngay lập tức
+// Thêm tác giả
 async function saveAuthor(values, { setFieldError }) {
   try {
     const payload = {
@@ -181,9 +219,14 @@ async function saveAuthor(values, { setFieldError }) {
 
     await api.post("/api/authors", payload);
 
+    // Cập nhật thông báo thành công
+    message.value = "Thêm tác giả thành công!";
+    messageType.value = "success";
+
     await fetchAuthors();
     closeDialog();
   } catch (err) {
+    // Hiển thị lỗi ngay tại field trong dialog
     setFieldError(
       "name",
       err.response?.data?.message || "Lỗi khi lưu tác giả!"
@@ -196,12 +239,17 @@ async function deleteAuthor(id) {
   if (confirm("Bạn có chắc chắn muốn xoá tác giả này?")) {
     try {
       await api.delete(`/api/authors/${id}`);
+
+      // Cập nhật thông báo thành công
+      message.value = "Xoá tác giả thành công!";
+      messageType.value = "success";
+
       await fetchAuthors();
     } catch (err) {
-      console.error(
-        "Lỗi khi xoá tác giả:",
-        err.response?.data?.message || err.message
-      );
+      // Cập nhật thông báo lỗi
+      message.value =
+        "Lỗi khi xoá: " + (err.response?.data?.message || err.message);
+      messageType.value = "error";
     }
   }
 }

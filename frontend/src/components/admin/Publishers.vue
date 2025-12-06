@@ -1,17 +1,49 @@
 <template>
   <div class="p-6 bg-white rounded-xl shadow space-y-6">
+    <!-- Header -->
     <div class="flex justify-between items-center">
       <h2 class="text-2xl font-bold">Quản lý Nhà Xuất Bản</h2>
       <v-btn color="primary" @click="openDialog()">Thêm NXB</v-btn>
     </div>
 
-    <v-text-field
-      v-model="search"
-      label="Tìm kiếm NXB"
-      prepend-inner-icon="mdi-magnify"
-      clearable
-    />
+    <!-- Thông báo (Thành công/Lỗi) -->
+    <span
+      v-if="message"
+      :class="{
+        'text-green-600': messageType === 'success',
+        'text-red-600': messageType === 'error',
+        'block text-center mb-4 font-medium': true,
+      }"
+    >
+      {{ message }}
+    </span>
 
+    <!-- Toolbar: Tìm kiếm + Tổng số lượng (GIAO DIỆN MỚI) -->
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+      <!-- Ô tìm kiếm (bên trái) -->
+      <div class="w-full sm:w-96">
+        <v-text-field
+          v-model="search"
+          placeholder="Tìm kiếm Nhà xuất bản..."
+          prepend-inner-icon="mdi-magnify"
+          density="compact"
+          variant="outlined"
+          hide-details
+          rounded="lg"
+          bg-color="white"
+          clearable
+        />
+      </div>
+
+      <!-- Chip hiển thị tổng số (bên phải - style nút xanh) -->
+      <div
+        class="bg-blue-600 text-white px-6 py-2 rounded-full font-bold text-sm shadow-sm whitespace-nowrap"
+      >
+        Tổng: {{ filteredPublishers.length }} NXB
+      </div>
+    </div>
+
+    <!-- Bảng dữ liệu -->
     <v-table>
       <thead>
         <tr>
@@ -113,6 +145,10 @@ const dialog = ref(false);
 const search = ref("");
 const publishers = ref([]);
 
+// State cho thông báo
+const message = ref("");
+const messageType = ref("");
+
 const currentPage = ref(1);
 const itemsPerPage = ref(5);
 
@@ -176,6 +212,10 @@ async function savePublisher(values, { setFieldError }) {
 
     await api.post("/api/publishers", payload);
 
+    // Cập nhật thông báo thành công
+    message.value = "Thêm NXB thành công!";
+    messageType.value = "success";
+
     // Tự động đóng dialog và reset form
     setTimeout(() => closeDialog(), 300);
 
@@ -192,14 +232,23 @@ async function deletePublisher(id) {
   if (confirm("Bạn có chắc chắn muốn xoá NXB này?")) {
     try {
       await api.delete(`/api/publishers/${id}`);
+
+      // Cập nhật thông báo thành công khi xóa
+      message.value = "Xoá NXB thành công!";
+      messageType.value = "success";
+
       await fetchPublishers();
     } catch (err) {
-      console.error("Lỗi khi xoá:", err.response?.data?.message || err.message);
+      message.value =
+        "Lỗi khi xoá: " + (err.response?.data?.message || err.message);
+      messageType.value = "error";
     }
   }
 }
 
 function openDialog() {
+  // Reset thông báo cũ khi mở dialog mới (tùy chọn)
+  // message.value = "";
   dialog.value = true;
 }
 function closeDialog() {
@@ -210,3 +259,10 @@ onMounted(() => {
   fetchPublishers();
 });
 </script>
+
+<style scoped>
+.v-table th,
+.v-table td {
+  padding: 12px;
+}
+</style>
