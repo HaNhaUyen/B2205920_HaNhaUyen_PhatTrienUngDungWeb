@@ -84,35 +84,51 @@
           />
         </Field>
 
-        <Field name="publishYear" v-slot="{ field, errors }">
-          <v-text-field
-            v-bind="field"
-            label="Năm xuất bản"
-            type="number"
-            prepend-inner-icon="mdi-calendar"
-            variant="outlined"
-            color="black"
-            :error-messages="errors"
-            class="mb-2"
-            :model-value="field.value"
-            @update:model-value="field.value = $event"
-          />
-        </Field>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Field name="publishYear" v-slot="{ field, errors }">
+            <v-text-field
+              v-bind="field"
+              label="Năm xuất bản"
+              type="number"
+              prepend-inner-icon="mdi-calendar"
+              variant="outlined"
+              color="black"
+              :error-messages="errors"
+              :model-value="field.value"
+              @update:model-value="field.value = $event"
+            />
+          </Field>
 
-        <Field name="quantity" v-slot="{ field, errors }">
-          <v-text-field
-            v-bind="field"
-            label="Số lượng"
-            type="number"
-            prepend-inner-icon="mdi-counter"
-            variant="outlined"
-            color="black"
-            :error-messages="errors"
-            class="mb-2"
-            :model-value="field.value"
-            @update:model-value="field.value = $event"
-          />
-        </Field>
+          <Field name="quantity" v-slot="{ field, errors }">
+            <v-text-field
+              v-bind="field"
+              label="Số lượng"
+              type="number"
+              prepend-inner-icon="mdi-counter"
+              variant="outlined"
+              color="black"
+              :error-messages="errors"
+              :model-value="field.value"
+              @update:model-value="field.value = $event"
+            />
+          </Field>
+
+          <!-- ✅ Thêm Field nhập Đơn giá -->
+          <Field name="price" v-slot="{ field, errors }">
+            <v-text-field
+              v-bind="field"
+              label="Đơn giá"
+              type="number"
+              prepend-inner-icon="mdi-cash"
+              suffix="VNĐ"
+              variant="outlined"
+              color="black"
+              :error-messages="errors"
+              :model-value="field.value"
+              @update:model-value="field.value = $event"
+            />
+          </Field>
+        </div>
 
         <Field name="description" v-slot="{ field, errors }">
           <v-textarea
@@ -197,6 +213,7 @@ export default {
       authors: [],
       categories: [],
       publishers: [],
+      // ✅ Cập nhật schema validation cho price
       schema: yup.object({
         title: yup.string().required("Vui lòng nhập tên sách"),
         authorId: yup.string().required("Chọn tác giả"),
@@ -207,6 +224,10 @@ export default {
           .number()
           .required("Nhập số lượng")
           .moreThan(0, "Số lượng phải lớn hơn 0"),
+        price: yup
+          .number()
+          .required("Nhập đơn giá")
+          .min(0, "Giá không được âm"),
         description: yup.string().nullable(),
         coverImage: yup.string().url("Phải là một URL hợp lệ").required(),
       }),
@@ -228,6 +249,7 @@ export default {
           ]);
 
         const book = bookRes.data;
+        // ✅ Mapping dữ liệu từ API vào form (thêm don_gia)
         this.initialValues = {
           title: book.ten_sach,
           authorId: book.ma_tac_gia || "",
@@ -235,6 +257,7 @@ export default {
           publisherId: book.ma_nxb || "",
           publishYear: book.nam_xuat_ban,
           quantity: book.so_luong,
+          price: book.don_gia || 0, // Mapping don_gia -> price
           description: book.mo_ta,
           coverImage: book.anh_bia,
         };
@@ -255,6 +278,7 @@ export default {
     async submitForm(values) {
       const id = this.$route.params.id;
       try {
+        // ✅ Thêm don_gia vào payload gửi lên server
         const payload = {
           ma_tac_gia: values.authorId,
           ten_sach: values.title,
@@ -264,6 +288,7 @@ export default {
           ma_nxb: values.publisherId,
           nam_xuat_ban: values.publishYear,
           so_luong: values.quantity,
+          don_gia: values.price, // Mapping lại price -> don_gia
         };
         await api.put(`/api/books/${id}`, payload);
         this.showMessage("Cập nhật sách thành công!", "success");

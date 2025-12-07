@@ -5,7 +5,7 @@
       Lịch sử mượn sách
     </h2>
 
-    <!-- THÊM MỚI: Hiển thị cảnh báo trạng thái tài khoản -->
+    <!-- Cảnh báo trạng thái tài khoản -->
     <v-fade-transition>
       <v-alert
         v-if="hasOverdueBooks"
@@ -63,6 +63,13 @@
               </div>
             </div>
           </div>
+        </template>
+
+        <!-- ✅ THÊM MỚI: Đơn giá -->
+        <template v-slot:item.don_gia="{ item }">
+          <span class="font-weight-bold text-green-700">
+            {{ formatCurrency(item.book.don_gia) }}
+          </span>
         </template>
 
         <!-- Ngày mượn -->
@@ -196,8 +203,10 @@ export default {
       snackbar: false,
       snackbarText: "",
       snackbarColor: "",
+      // ✅ Cập nhật headers: Thêm cột Đơn giá
       headers: [
         { title: "Thông tin sách", key: "book_name", sortable: false },
+        { title: "Đơn giá", key: "don_gia", align: "end" }, // Cột mới
         { title: "Ngày mượn", key: "ngay_muon" },
         { title: "Hạn trả", key: "han_tra" },
         { title: "Ngày trả thực", key: "ngay_tra" },
@@ -219,17 +228,14 @@ export default {
       const end = start + this.itemsPerPage;
       return this.borrowedBooks.slice(start, end);
     },
-    // THÊM MỚI: Tính danh sách các sách đang quá hạn
     overdueBooksList() {
       return this.borrowedBooks.filter(
         (book) => book.trang_thai === "borrowing" && this.isOverdue(book)
       );
     },
-    // THÊM MỚI: Đếm số sách quá hạn
     overdueBooksCount() {
       return this.overdueBooksList.length;
     },
-    // THÊM MỚI: Cờ kiểm tra xem có bị quá hạn không
     hasOverdueBooks() {
       return this.overdueBooksCount > 0;
     },
@@ -255,13 +261,6 @@ export default {
       }
     },
 
-    // --- LOGIC KIỂM TRA ĐIỀU KIỆN MƯỢN (Dành cho chức năng Mượn Sách) ---
-
-    /**
-     * Hàm này kiểm tra xem người dùng có được phép tạo đơn mượn mới không.
-     * Logic: Nếu có sách quá hạn -> Trả về false.
-     * Bạn có thể gọi hàm này trước khi cho phép user nhấn nút "Mượn sách".
-     */
     checkBorrowEligibility() {
       if (this.hasOverdueBooks) {
         this.showSnackbar(
@@ -273,26 +272,18 @@ export default {
       return true;
     },
 
-    /**
-     * Hàm này kiểm tra giới hạn 5 quyển/1 đầu sách.
-     * @param {string} bookId - ID của sách muốn mượn
-     * @param {number} newQuantity - Số lượng muốn mượn thêm
-     */
     checkBookQuantityLimit(bookId, newQuantity) {
-      // 1. Lọc ra các đơn đang mượn (borrowing) hoặc đang chờ duyệt (pending) của sách này
       const currentBorrows = this.borrowedBooks.filter(
         (b) =>
           (b.trang_thai === "borrowing" || b.trang_thai === "pending") &&
-          b.book._id === bookId // Giả sử item.book chứa _id
+          b.book._id === bookId
       );
 
-      // 2. Tính tổng số lượng đang giữ
       const currentQuantity = currentBorrows.reduce(
         (sum, item) => sum + (item.so_luong || 0),
         0
       );
 
-      // 3. Kiểm tra logic
       if (currentQuantity + newQuantity > 5) {
         this.showSnackbar(
           `Bạn chỉ được mượn tối đa 5 quyển cho mỗi đầu sách. Hiện đang mượn: ${currentQuantity}`,
@@ -302,8 +293,6 @@ export default {
       }
       return true;
     },
-
-    // -------------------------------------------------------------------
 
     async cancelRequest(borrowId) {
       if (!confirm("Bạn có chắc muốn hủy yêu cầu mượn sách này?")) return;
@@ -368,7 +357,9 @@ export default {
       if (!date) return "";
       return new Date(date).toLocaleDateString("vi-VN");
     },
+    // ✅ Cập nhật logic format currency an toàn hơn
     formatCurrency(value) {
+      if (!value && value !== 0) return "0 ₫";
       return new Intl.NumberFormat("vi-VN", {
         style: "currency",
         currency: "VND",
@@ -378,7 +369,6 @@ export default {
       if (borrow.han_tra) return borrow.han_tra;
       if (borrow.ngay_muon) {
         const borrowDate = new Date(borrow.ngay_muon);
-        // Mặc định mượn 14 ngày
         const dueDate = new Date(
           borrowDate.getTime() + 14 * 24 * 60 * 60 * 1000
         );
@@ -409,7 +399,6 @@ export default {
       const diffTime = returnDate - dueDate;
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-      // Phạt 5.000đ mỗi ngày quá hạn
       return diffDays * 5000;
     },
     isOverdue(item) {
@@ -419,7 +408,6 @@ export default {
       const now = new Date();
       const dueDate = new Date(dueDateStr);
 
-      // So sánh ngày (bỏ qua giờ)
       now.setHours(0, 0, 0, 0);
       dueDate.setHours(0, 0, 0, 0);
 
@@ -428,7 +416,7 @@ export default {
     getStatusColor(status) {
       switch (status) {
         case "pending":
-          return "orange-darken-2"; // Đổi màu cam cho dễ nhìn
+          return "orange-darken-2";
         case "borrowing":
           return "blue";
         case "returned":

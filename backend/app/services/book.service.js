@@ -20,9 +20,13 @@ class BookService {
       nam_xuat_ban: payload.nam_xuat_ban,
       anh_bia: payload.anh_bia,
       so_luong: payload.so_luong || 1,
+      // Thêm đơn giá vào dữ liệu trích xuất
+      don_gia:
+        payload.don_gia !== undefined ? Number(payload.don_gia) : undefined,
       ngay_tao: payload.ngay_tao || new Date(),
     };
 
+    // Loại bỏ các trường undefined
     Object.keys(book).forEach(
       (key) => book[key] === undefined && delete book[key]
     );
@@ -32,6 +36,9 @@ class BookService {
 
   async create(payload) {
     const book = this.extractBookData(payload);
+    // Nếu tạo mới mà không có đơn giá, set mặc định là 0 (tuỳ chọn)
+    if (book.don_gia === undefined) book.don_gia = 0;
+
     const result = await this.Book.findOneAndUpdate(
       { ten_sach: book.ten_sach, ma_tac_gia: book.ma_tac_gia },
       { $set: book },
@@ -157,13 +164,14 @@ class BookService {
         },
         {
           $project: {
-            _id: 1, // ID sách
-            ten_sach: 1, // Tiêu đề
-            anh_bia: 1, // Ảnh bìa
-            mo_ta: 1, // Mô tả ✅
-            ma_the_loai: 1, // ID thể loại
-            ma_tac_gia: 1, // ID tác giả
-            ten_tac_gia: "$authorInfo.ho_ten", // Tên tác giả
+            _id: 1,
+            ten_sach: 1,
+            anh_bia: 1,
+            mo_ta: 1,
+            ma_the_loai: 1,
+            ma_tac_gia: 1,
+            don_gia: 1, // ✅ Đã thêm đơn giá vào danh sách
+            ten_tac_gia: "$authorInfo.ho_ten",
           },
         },
       ];
@@ -218,6 +226,7 @@ class BookService {
           nam_xuat_ban: 1,
           anh_bia: 1,
           so_luong: 1,
+          don_gia: 1, // ✅ Đã thêm đơn giá vào chi tiết
           ten_tac_gia: "$tacgia.ho_ten",
           ten_nxb: "$nhaxuatban.ten_nxb",
           ten_the_loai: "$theloai.ten_the_loai",

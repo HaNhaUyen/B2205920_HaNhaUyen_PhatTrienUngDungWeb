@@ -22,7 +22,7 @@
       </span>
     </v-fade-transition>
 
-    <!-- Toolbar: Tìm kiếm + Tổng số lượng (Giữ nguyên chức năng mới thêm) -->
+    <!-- Toolbar -->
     <div
       class="flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50 p-4 rounded-lg border"
     >
@@ -48,7 +48,7 @@
       </div>
     </div>
 
-    <!-- Bảng dữ liệu (Giao diện cũ) -->
+    <!-- Bảng dữ liệu -->
     <v-table>
       <thead>
         <tr>
@@ -57,8 +57,10 @@
           <th>Tên sách</th>
           <th>Tác giả</th>
           <th>Thể loại</th>
-          <th>Nhà xuất bản</th>
-          <th>Năm xuất bản</th>
+          <!-- <th>Nhà xuất bản</th> -->
+          <th>Năm XB</th>
+          <th>Đơn giá</th>
+          <!-- ✅ Thêm cột đơn giá -->
           <th>Số lượng</th>
           <th>Mô tả</th>
           <th>Hành động</th>
@@ -77,8 +79,14 @@
           <td>{{ book.ten_sach }}</td>
           <td>{{ book.ten_tac_gia }}</td>
           <td>{{ book.ten_the_loai }}</td>
-          <td>{{ book.ten_nxb }}</td>
+          <!-- <td>{{ book.ten_nxb }}</td> -->
           <td>{{ book.nam_xuat_ban }}</td>
+
+          <!-- ✅ Hiển thị giá tiền -->
+          <td class="font-weight-bold text-green-700">
+            {{ formatCurrency(book.don_gia) }}
+          </td>
+
           <td>{{ book.so_luong }}</td>
           <td>
             <div class="tooltip-container">
@@ -174,20 +182,35 @@
               />
             </Field>
 
-            <Field name="publishYear" v-slot="{ field, errorMessage }">
-              <v-text-field
-                v-bind="field"
-                label="Năm xuất bản"
-                type="number"
-                :error-messages="errorMessage"
-              />
-            </Field>
+            <div class="flex gap-4">
+              <Field name="publishYear" v-slot="{ field, errorMessage }">
+                <v-text-field
+                  v-bind="field"
+                  label="Năm xuất bản"
+                  type="number"
+                  class="w-1/2"
+                  :error-messages="errorMessage"
+                />
+              </Field>
 
-            <Field name="quantity" v-slot="{ field, errorMessage }">
+              <Field name="quantity" v-slot="{ field, errorMessage }">
+                <v-text-field
+                  v-bind="field"
+                  label="Số lượng"
+                  type="number"
+                  class="w-1/2"
+                  :error-messages="errorMessage"
+                />
+              </Field>
+            </div>
+
+            <!-- ✅ Thêm Field nhập Đơn giá -->
+            <Field name="price" v-slot="{ field, errorMessage }">
               <v-text-field
                 v-bind="field"
-                label="Số lượng"
+                label="Đơn giá (VNĐ)"
                 type="number"
+                prefix="₫"
                 :error-messages="errorMessage"
               />
             </Field>
@@ -240,7 +263,7 @@ const authors = ref([]);
 const categories = ref([]);
 const publishers = ref([]);
 
-// Schema xác thực
+// ✅ Cập nhật Schema xác thực thêm price
 const bookSchema = yup.object({
   title: yup.string().required("Vui lòng nhập tên sách"),
   authorId: yup.string().required("Chọn tác giả"),
@@ -251,9 +274,19 @@ const bookSchema = yup.object({
     .number()
     .required("Nhập số lượng")
     .moreThan(0, "Số lượng phải lớn hơn 0"),
+  price: yup.number().required("Nhập đơn giá").min(0, "Giá không được âm"),
   description: yup.string().nullable(),
   coverImage: yup.string().url("Phải là một URL hợp lệ").required(),
 });
+
+// ✅ Hàm định dạng tiền tệ VNĐ
+const formatCurrency = (value) => {
+  if (!value && value !== 0) return "0 đ";
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(value);
+};
 
 // Lọc danh sách theo từ khóa
 const filteredBooks = computed(() =>
@@ -324,6 +357,7 @@ function closeDialog() {
 // Lưu sách (thêm hoặc cập nhật)
 async function saveBook(values) {
   try {
+    // ✅ Thêm don_gia vào payload
     const payload = {
       ma_tac_gia: values.authorId,
       ten_sach: values.title,
@@ -333,7 +367,9 @@ async function saveBook(values) {
       ma_nxb: values.publisherId,
       nam_xuat_ban: values.publishYear,
       so_luong: values.quantity,
+      don_gia: values.price, // Mapping từ form value (price) sang db field (don_gia)
     };
+
     await api.post("/api/books", payload);
     message.value = "Thêm sách thành công!";
     messageType.value = "success";
@@ -384,7 +420,7 @@ onMounted(() => {
   white-space: normal;
   max-width: 300px;
   line-height: 1.4em;
-  max-height: 4.2em; /* 3 dòng x line-height */
+  max-height: 4.2em;
 }
 
 .tooltip-container {
@@ -400,7 +436,7 @@ onMounted(() => {
   padding: 5px;
   border-radius: 4px;
   position: absolute;
-  z-index: 1000; /* Tăng z-index để tooltip đè lên các phần tử khác */
+  z-index: 1000;
   bottom: 100%;
   left: 0;
   width: max-content;
