@@ -41,7 +41,6 @@
             </v-toolbar>
 
             <!-- Table -->
-            <!-- Lưu ý: items là paginatedComments (đã cắt trang) -->
             <v-data-table
               :headers="headers"
               :items="paginatedComments"
@@ -49,24 +48,27 @@
               class="pa-2 custom-table"
               hover
             >
-              <!-- Ẩn footer mặc định của v-data-table để dùng pagination riêng -->
+              <!-- Ẩn footer mặc định -->
               <template v-slot:bottom></template>
 
-              <!-- Slot: Thông tin sách -->
-              <template v-slot:item.book="{ item }">
-                <div class="d-flex align-center py-2">
-                  <v-img
-                    :src="item.book.anh_bia"
-                    width="60"
-                    height="90"
-                    cover
-                    class="rounded elevation-2 mr-3 bg-grey-lighten-3 flex-shrink-0"
-                  ></v-img>
-                  <div
-                    class="font-weight-bold text-body-2 text-blue-grey-darken-4 line-clamp-2"
-                  >
-                    {{ item.book.ten_sach }}
-                  </div>
+              <!-- ✅ CỘT 1: ẢNH BÌA -->
+              <template v-slot:item.book_img="{ item }">
+                <v-img
+                  :src="item.book?.anh_bia"
+                  width="45"
+                  height="70"
+                  cover
+                  class="rounded elevation-2 bg-grey-lighten-3 my-1"
+                ></v-img>
+              </template>
+
+              <!-- ✅ CỘT 2: TÊN SÁCH -->
+              <template v-slot:item.book_name="{ item }">
+                <div
+                  class="font-weight-bold text-body-2 text-blue-grey-darken-4 line-clamp-2"
+                  :title="item.book?.ten_sach"
+                >
+                  {{ item.book?.ten_sach }}
                 </div>
               </template>
 
@@ -74,10 +76,10 @@
               <template v-slot:item.user="{ item }">
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium text-body-2">{{
-                    item.user.ho_ten
+                    item.user?.ho_ten
                   }}</span>
                   <span class="text-caption text-grey">{{
-                    item.user.email
+                    item.user?.email
                   }}</span>
                 </div>
               </template>
@@ -94,7 +96,7 @@
                 ></v-rating>
               </template>
 
-              <!-- Slot: Nội dung (cắt ngắn nếu dài) -->
+              <!-- Slot: Nội dung -->
               <template v-slot:item.noi_dung="{ item }">
                 <v-tooltip location="top" activator="parent" max-width="400">
                   {{ item.noi_dung }}
@@ -136,7 +138,7 @@
             </v-data-table>
           </v-card>
 
-          <!-- PHÂN TRANG (Giống Categories) -->
+          <!-- PHÂN TRANG -->
           <v-row class="mt-4">
             <v-col cols="12" class="flex justify-center">
               <v-pagination
@@ -153,7 +155,7 @@
       </v-row>
     </v-container>
 
-    <!-- Snackbar thông báo -->
+    <!-- Snackbar -->
     <v-snackbar
       v-model="snackbar"
       :color="snackbarColor"
@@ -176,16 +178,24 @@ const snackbar = ref(false);
 const snackbarText = ref("");
 const snackbarColor = ref("");
 
-// --- 1. Cấu hình phân trang (Giống Categories) ---
+// --- 1. Cấu hình phân trang ---
 const currentPage = ref(1);
-const itemsPerPage = ref(5); // Số lượng comment mỗi trang
+const itemsPerPage = ref(5);
 
+// ✅ CẬP NHẬT HEADERS: Tách cột sách thành 2
 const headers = [
-  { title: "Sách", key: "book", align: "start", width: "25%" },
+  {
+    title: "Ảnh",
+    key: "book_img",
+    align: "center",
+    width: "80px",
+    sortable: false,
+  },
+  { title: "Tên sách", key: "book_name", align: "start", width: "20%" },
   { title: "Độc giả", key: "user", align: "start", width: "20%" },
-  { title: "Đánh giá", key: "ti_le", align: "start", width: "15%" },
+  { title: "Đánh giá", key: "ti_le", align: "start", width: "120px" },
   { title: "Nội dung", key: "noi_dung", align: "start" },
-  { title: "Ngày đăng", key: "ngay_tao", align: "end", width: "120px" },
+  { title: "Ngày đăng", key: "ngay_tao", align: "end", width: "110px" },
   {
     title: "Xóa",
     key: "actions",
@@ -213,9 +223,8 @@ const fetchComments = async () => {
 
 onMounted(fetchComments);
 
-// --- 3. Logic Lọc và Phân trang (Giống Categories) ---
+// --- 3. Logic Lọc và Phân trang ---
 
-// Lọc theo search
 const filteredComments = computed(() => {
   if (!search.value) return comments.value;
   const q = search.value.toLowerCase();
@@ -228,18 +237,15 @@ const filteredComments = computed(() => {
   });
 });
 
-// Tính tổng số trang
 const totalPages = computed(() =>
   Math.ceil(filteredComments.value.length / itemsPerPage.value)
 );
 
-// Cắt dữ liệu cho trang hiện tại
 const paginatedComments = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value;
   return filteredComments.value.slice(start, start + itemsPerPage.value);
 });
 
-// Reset trang về 1 khi tìm kiếm
 watch(search, () => {
   currentPage.value = 1;
 });
@@ -259,7 +265,6 @@ const deleteComment = async (id) => {
     comments.value = comments.value.filter((c) => c._id !== id);
     showSnackbar("Đã xóa bình luận thành công", "success");
 
-    // Kiểm tra nếu xóa hết item ở trang cuối thì lùi lại 1 trang
     if (paginatedComments.value.length === 0 && currentPage.value > 1) {
       currentPage.value--;
     }
